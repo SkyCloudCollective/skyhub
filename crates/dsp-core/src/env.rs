@@ -81,6 +81,9 @@ impl Adsr {
     }
 
     /// Advance one sample, returning the current envelope level [0,1].
+    /// (Named `next` for consistency with the other one-sample generators; it
+    /// is not an `Iterator`.)
+    #[allow(clippy::should_implement_trait)]
     #[inline]
     pub fn next(&mut self) -> f32 {
         match self.stage {

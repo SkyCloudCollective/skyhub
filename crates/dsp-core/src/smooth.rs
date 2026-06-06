@@ -48,6 +48,8 @@ impl Smoothed {
     }
 
     /// Advance one sample and return the smoothed value.
+    /// (Named `next` for consistency with the other generators; not an `Iterator`.)
+    #[allow(clippy::should_implement_trait)]
     #[inline]
     pub fn next(&mut self) -> f32 {
         self.current = self.target + (self.current - self.target) * self.coeff;

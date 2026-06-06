@@ -65,3 +65,16 @@ def client(tmp_path: pathlib.Path, monkeypatch):
         conn.close()
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def wconn(tmp_path: pathlib.Path):
+    """A writable connection to a fresh seeded DB (for direct community unit tests)."""
+    db_file = tmp_path / "c.db"
+    init_db(db_file)
+    conn = connect(db_file)
+    _seed(conn)
+    try:
+        yield conn
+    finally:
+        conn.close()

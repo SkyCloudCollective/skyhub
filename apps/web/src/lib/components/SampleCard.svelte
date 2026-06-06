@@ -3,12 +3,14 @@
 	import { type Sample, downloadUrl, getPeaks } from '$lib/api';
 	import { playingId, toggle } from '$lib/player';
 	import { dragOutSample } from '$lib/drag';
+	import { favoriteIds, toggleFavorite } from '$lib/collections';
 	import Waveform from './Waveform.svelte';
 
 	let { sample }: { sample: Sample } = $props();
 
 	let peaks = $state<number[][]>([]);
 	const isPlaying = $derived($playingId === sample.id);
+	const fav = $derived($favoriteIds.has(sample.id));
 
 	onMount(async () => {
 		try {
@@ -43,7 +45,7 @@
 	<div class="body">
 		<div class="row1">
 			<span class="title">{sample.title}</span>
-			{#if sample.contributor}<span class="by muted">@{sample.contributor}</span>{/if}
+			{#if sample.contributor}<a class="by muted" href={`/u/${sample.contributor}`} draggable="false">@{sample.contributor}</a>{/if}
 		</div>
 
 		<Waveform {peaks} playing={isPlaying} />
@@ -57,17 +59,51 @@
 		</div>
 	</div>
 
-	<a class="dl" href={downloadUrl(sample.id)} download={sample.filename} aria-label="Download" title="Download">↓</a>
+	<div class="side">
+		<button
+			class="fav"
+			class:on={fav}
+			onclick={() => toggleFavorite(sample.id)}
+			aria-pressed={fav}
+			aria-label={fav ? 'Remove favourite' : 'Add favourite'}
+			title="Favourite"
+		>
+			{fav ? '★' : '☆'}
+		</button>
+		<a class="dl" href={downloadUrl(sample.id)} download={sample.filename} aria-label="Download" title="Download">↓</a>
+	</div>
 </article>
 
 <style>
 	.card {
 		display: grid;
-		grid-template-columns: 44px 1fr 36px;
+		grid-template-columns: 44px 1fr auto;
 		align-items: center;
 		gap: var(--space-3);
 		padding: var(--space-3) var(--space-4);
 		cursor: grab;
+	}
+	.side {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+	}
+	.fav {
+		width: 36px;
+		height: 36px;
+		display: grid;
+		place-items: center;
+		background: transparent;
+		border: 1px solid transparent;
+		color: var(--muted);
+		font-size: 18px;
+	}
+	.fav:hover {
+		color: var(--accent-3);
+		border-color: var(--line);
+	}
+	.fav.on {
+		color: var(--accent-3);
 	}
 	.card:active {
 		cursor: grabbing;

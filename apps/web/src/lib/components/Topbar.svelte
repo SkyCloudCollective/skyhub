@@ -35,6 +35,7 @@
 	</nav>
 
 	<div class="actions">
+		<a class="ghost acct" href="/u/me" title="Profile" aria-label="Profile">me</a>
 		<button class="ghost" onclick={toggleTheme} title={$t('theme.toggle')} aria-label={$t('theme.toggle')}>
 			{$theme === 'aero-dark' ? '☾' : '☀'}
 		</button>
@@ -108,5 +109,11 @@
 	.ghost {
 		background: var(--surface);
 		min-width: 38px;
+		text-align: center;
+	}
+	.acct {
+		text-decoration: none;
+		color: var(--fg-dim);
+		line-height: 26px;
 	}
 </style>

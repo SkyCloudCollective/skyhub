@@ -62,8 +62,6 @@
 		flex-direction: column;
 		gap: var(--space-3);
 		align-self: start;
-		position: sticky;
-		top: calc(var(--rail-topbar) + var(--space-4));
 	}
 	.head {
 		display: flex;

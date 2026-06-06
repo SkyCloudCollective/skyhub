@@ -24,12 +24,23 @@ export function dragOutSample(e: DragEvent, sample: Sample) {
 		return;
 	}
 
-	// Browser fallback: a download link the DAW/desktop can fetch.
+	// Browser fallback: a download link the DAW/desktop can fetch, PLUS an
+	// internal id so in-app crate drop-zones can accept the same drag.
 	if (e.dataTransfer) {
 		const name = sample.filename || `${sample.title}.wav`;
 		e.dataTransfer.effectAllowed = 'copy';
 		e.dataTransfer.setData('DownloadURL', `application/octet-stream:${name}:${url}`);
 		e.dataTransfer.setData('text/uri-list', url);
 		e.dataTransfer.setData('text/plain', url);
+		e.dataTransfer.setData(RS_DRAG_MIME, String(sample.id));
 	}
+}
+
+// Internal MIME carrying the sample id for drag-to-crate within the app.
+export const RS_DRAG_MIME = 'application/x-ranchsample-id';
+
+export function readDraggedSampleId(e: DragEvent): number | null {
+	const raw = e.dataTransfer?.getData(RS_DRAG_MIME);
+	const id = raw ? parseInt(raw, 10) : NaN;
+	return Number.isFinite(id) ? id : null;
 }

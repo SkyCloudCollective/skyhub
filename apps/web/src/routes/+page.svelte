@@ -2,8 +2,10 @@
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
 	import { getFacets, search, type Facets, type SearchParams, type SearchResult } from '$lib/api';
+	import { loadCommunity } from '$lib/collections';
 	import SampleCard from '$lib/components/SampleCard.svelte';
 	import FacetSidebar from '$lib/components/FacetSidebar.svelte';
+	import Crates from '$lib/components/Crates.svelte';
 
 	let q = $state('');
 	let filters = $state<SearchParams>({});
@@ -15,6 +17,7 @@
 	onMount(async () => {
 		try {
 			facets = await getFacets();
+			await loadCommunity();
 		} catch {
 			offline = true;
 		}
@@ -60,7 +63,10 @@
 {/if}
 
 <div class="layout">
-	<FacetSidebar {facets} bind:filters />
+	<div class="rail">
+		<FacetSidebar {facets} bind:filters />
+		<Crates />
+	</div>
 
 	<section class="results">
 		{#if result && result.hits.length}
@@ -100,6 +106,13 @@
 		grid-template-columns: var(--rail-sidebar) 1fr;
 		gap: var(--space-5);
 		align-items: start;
+	}
+	.rail {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		position: sticky;
+		top: calc(var(--rail-topbar) + var(--space-4));
 	}
 	.results {
 		display: flex;

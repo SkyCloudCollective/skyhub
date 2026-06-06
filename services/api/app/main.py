@@ -12,11 +12,12 @@ import sqlite3
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
-from . import __version__, auth, catalog
+from . import __version__, auth, catalog, community
 from .db import PREVIEWS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -48,6 +49,20 @@ def db() -> sqlite3.Connection:
         yield conn
     finally:
         conn.close()
+
+
+def wdb() -> sqlite3.Connection:
+    """Writable connection for community write paths."""
+    conn = connect()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def acting(authorization: Optional[str] = Header(default=None)) -> str:
+    """The handle performing the request (dev mode -> the dev handle)."""
+    return auth.current_handle(authorization)
 
 
 # ── discovery ────────────────────────────────────────────────────────────────
@@ -143,3 +158,160 @@ def download(sample_id: int, conn: sqlite3.Connection = Depends(db)):
         filename=filename,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── profiles ─────────────────────────────────────────────────────────────────
+class ProfilePatch(BaseModel):
+    display_name: Optional[str] = None
+    bio: Optional[str] = None
+    links: Optional[list] = None
+
+
+@app.get("/v1/profile/{handle}")
+def get_profile(handle: str, conn: sqlite3.Connection = Depends(db)):
+    return community.get_profile(conn, auth.clean_handle(handle))
+
+
+@app.get("/v1/me/profile")
+def my_profile(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return community.get_profile(conn, me)
+
+
+@app.patch("/v1/me/profile")
+def patch_profile(
+    body: ProfilePatch, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    return community.upsert_profile(
+        conn, me, display_name=body.display_name, bio=body.bio, links=body.links
+    )
+
+
+# ── collections (crates / favourites / smart) ────────────────────────────────
+class CollectionCreate(BaseModel):
+    name: str
+    visibility: str = "private"
+
+
+class CollectionPatch(BaseModel):
+    name: Optional[str] = None
+    visibility: Optional[str] = None
+    position: Optional[int] = None
+
+
+class ItemAdd(BaseModel):
+    sample_id: int
+
+
+def _forbidden_to_http(fn):
+    try:
+        return fn()
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="forbidden")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/v1/collections")
+def list_collections(
+    owner: Optional[str] = None,
+    conn: sqlite3.Connection = Depends(db),
+    me: str = Depends(acting),
+):
+    who = auth.clean_handle(owner) if owner else me
+    return community.list_collections(conn, who, viewer=me)
+
+
+@app.post("/v1/collections", status_code=201)
+def create_collection(
+    body: CollectionCreate, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    return _forbidden_to_http(
+        lambda: community.create_collection(conn, me, body.name, visibility=body.visibility)
+    )
+
+
+@app.get("/v1/collections/{cid}")
+def get_collection(
+    cid: int,
+    token: Optional[str] = None,
+    conn: sqlite3.Connection = Depends(db),
+    me: str = Depends(acting),
+):
+    try:
+        res = community.get_collection(conn, cid, viewer=me, token=token)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="forbidden")
+    if res is None:
+        raise HTTPException(status_code=404, detail="collection not found")
+    return res
+
+
+@app.patch("/v1/collections/{cid}")
+def patch_collection(
+    cid: int, body: CollectionPatch,
+    conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting),
+):
+    res = _forbidden_to_http(
+        lambda: community.update_collection(conn, cid, me, body.model_dump(exclude_none=True))
+    )
+    if res is None:
+        raise HTTPException(status_code=404, detail="collection not found")
+    return res
+
+
+@app.delete("/v1/collections/{cid}", status_code=204)
+def delete_collection(
+    cid: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    ok = _forbidden_to_http(lambda: community.delete_collection(conn, cid, me))
+    if not ok:
+        raise HTTPException(status_code=404, detail="collection not found")
+
+
+@app.post("/v1/collections/{cid}/items", status_code=201)
+def add_item(
+    cid: int, body: ItemAdd, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    ok = _forbidden_to_http(lambda: community.add_item(conn, cid, me, body.sample_id))
+    if not ok:
+        raise HTTPException(status_code=404, detail="collection not found")
+    return {"ok": True}
+
+
+@app.delete("/v1/collections/{cid}/items/{sample_id}", status_code=204)
+def remove_item(
+    cid: int, sample_id: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    ok = _forbidden_to_http(lambda: community.remove_item(conn, cid, me, sample_id))
+    if not ok:
+        raise HTTPException(status_code=404, detail="collection not found")
+
+
+# ── favourites (system collection) ───────────────────────────────────────────
+class FavAdd(BaseModel):
+    sample_id: int
+
+
+@app.get("/v1/favorites")
+def get_favorites(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    return community.list_favorites(conn, me)
+
+
+@app.get("/v1/favorites/ids")
+def get_favorite_ids(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    return community.favorite_ids(conn, me)
+
+
+@app.post("/v1/favorites", status_code=201)
+def add_favorite(
+    body: FavAdd, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    _forbidden_to_http(lambda: community.set_favorite(conn, me, body.sample_id, True))
+    return {"ok": True}
+
+
+@app.delete("/v1/favorites/{sample_id}", status_code=204)
+def remove_favorite(
+    sample_id: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    community.set_favorite(conn, me, sample_id, False)

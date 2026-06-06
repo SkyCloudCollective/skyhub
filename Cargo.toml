@@ -1,0 +1,35 @@
+# Rust workspace root — one Cargo.lock for every crate.
+#
+# The dependency graph IS the anti-divergence safeguard:
+#   dsp-core  ──►  botanica / phaseplan  ──►  dsp-wasm (web)
+#                                         └─►  plugin-* (native VST3/CLAP)
+# DSP lives ONLY in dsp-core + the instrument crates; the wasm and plugin
+# wrappers are thin and contain no signal processing, so the web studio and the
+# native plugin run byte-identical code (proven by the golden-render tests).
+[workspace]
+resolver = "2"
+members = [
+    "crates/dsp-core",
+    # added as each crate lands (keeps `cargo check` green meanwhile):
+    # "crates/botanica", "crates/phaseplan",
+    # "crates/dsp-wasm", "crates/plugin-botanica", "crates/plugin-phaseplan",
+    # "crates/desktop", "crates/xtask",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+authors = ["the SKY collective"]
+rust-version = "1.80"
+
+[workspace.dependencies]
+dsp-core = { path = "crates/dsp-core" }
+
+# Release profile tuned for real-time audio: no debug-assert overhead in the
+# audio thread, aggressive inlining across crates (LTO) for the DSP hot path.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"

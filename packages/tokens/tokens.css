@@ -1,0 +1,171 @@
+/* ============================================================================
+   RanchSamples design tokens — Bauhaus · Liquid Glass · Aero
+   ----------------------------------------------------------------------------
+   ONE token layer drives the whole UI. Components consume the *semantic* tokens
+   (--bg, --surface, --fg, --accent, --glass-*); they never hard-code a colour.
+   Themes remap the semantic layer; the glass skin is shared across themes.
+
+   Three lineages, on purpose:
+     • Bauhaus      — strict 8px grid, geometric forms, the three primaries
+                      (red / yellow / blue) used as SPARSE accents on a neutral
+                      ground; legible sans, left-aligned, nothing decorative.
+     • Liquid Glass — frosted translucent surfaces (backdrop-filter blur), depth
+                      by layered transparency, soft edges, a quiet top sheen.
+     • Aero         — soft sky gradients, gentle gloss and glow (never an alarm),
+                      light and air.
+
+   Accessibility is a constraint, not a theme (Marwan: TDAH + visual dyslexia):
+   warm near-black (never #000), AA+ contrast on text, left alignment, reduced
+   motion honoured, and NO alarm iconography. See the bottom of this file.
+   ============================================================================ */
+
+:root {
+  /* ── Primitives: warm neutral ramp (never pure black / pure white) ──────── */
+  --n-0:   #ffffff;
+  --n-50:  #f7f5f1;   /* warm off-white */
+  --n-100: #ece8e1;
+  --n-200: #dcd6cb;
+  --n-300: #c0b8aa;
+  --n-400: #978e7f;
+  --n-500: #6f675b;
+  --n-600: #514a40;
+  --n-700: #3a352e;
+  --n-800: #262320;
+  --n-900: #1a1714;   /* warm near-black — body text floor */
+
+  /* ── Primitives: Bauhaus primaries (sparse accents only) ────────────────── */
+  --bauhaus-red:    #e2473b;   /* vermilion */
+  --bauhaus-yellow: #f4b71e;
+  --bauhaus-blue:   #2b6cd4;
+  --c-good:         #2fa15a;
+  --c-warn:         #e08a1e;   /* warm amber, NOT red — calm, not alarm */
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  /* Body stays maximally legible (dyslexia). Display is geometric (Bauhaus),
+     titles-only. Self-host these fonts in apps/web/static/fonts. */
+  --font-sans:    "Atkinson Hyperlegible", "Lexend", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk", "Archivo", var(--font-sans);
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-xs:  0.75rem;   /* 12 */
+  --text-sm:  0.875rem;  /* 14 */
+  --text-md:  1rem;      /* 16 — base */
+  --text-lg:  1.25rem;   /* 20 */
+  --text-xl:  1.625rem;  /* 26 */
+  --text-2xl: 2.125rem;  /* 34 */
+  --text-3xl: 2.75rem;   /* 44 */
+  --leading-tight: 1.2;
+  --leading:       1.5;   /* generous for dyslexia */
+  --leading-loose: 1.7;
+  --tracking-display: -0.01em;
+
+  /* ── Space: strict 8px Bauhaus grid ─────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4 */
+  --space-2: 0.5rem;   /* 8 */
+  --space-3: 0.75rem;  /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.5rem;   /* 24 */
+  --space-6: 2rem;     /* 32 */
+  --space-8: 3rem;     /* 48 */
+  --space-10: 4rem;    /* 64 */
+  --space-12: 6rem;    /* 96 */
+
+  /* ── Radius ──────────────────────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* ── Motion (honours prefers-reduced-motion, see bottom) ─────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+
+  /* ── Layout rails ────────────────────────────────────────────────────────── */
+  --rail-topbar: 56px;
+  --rail-sidebar: 248px;
+  --content-max: 1280px;
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+/* ============================================================================
+   Aero — light (DEFAULT). A frosted day sky; glass surfaces float over it.
+   ============================================================================ */
+:root,
+[data-theme="aero-light"] {
+  color-scheme: light;
+
+  --bg:        #cfe7fa;
+  --bg-grad:   radial-gradient(1200px 700px at 78% -8%, #eaf6ff 0%, #cfe7fa 42%, #b6d8f2 100%);
+  --fg:        var(--n-900);
+  --fg-dim:    var(--n-600);
+  --muted:     var(--n-500);
+  --line:      color-mix(in srgb, var(--n-900) 12%, transparent);
+
+  --accent:      var(--bauhaus-blue);
+  --accent-2:    var(--bauhaus-red);
+  --accent-3:    var(--bauhaus-yellow);
+  --accent-ink:  #ffffff;        /* text on accent fills */
+
+  /* Liquid Glass surfaces (translucent; need backdrop-filter) */
+  --surface:      rgba(255, 255, 255, 0.62);
+  --surface-2:    rgba(255, 255, 255, 0.80);
+  --surface-solid:#f4f9ff;       /* opaque fallback where blur is unavailable */
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-blur:   16px;
+  --gloss:        rgba(255, 255, 255, 0.95);   /* top highlight */
+  --sheen:        rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 10px 30px rgba(20, 90, 140, 0.16);
+  --scrim:        rgba(12, 32, 48, 0.32);       /* modal backdrop */
+}
+
+/* ============================================================================
+   Aero — dark. The same glossy glass over a deep, warm night sky.
+   ============================================================================ */
+[data-theme="aero-dark"] {
+  color-scheme: dark;
+
+  --bg:        #0e1822;
+  --bg-grad:   radial-gradient(1200px 700px at 78% -8%, #16303f 0%, #0e1822 48%, #0a121a 100%);
+  --fg:        #eef4f8;
+  --fg-dim:    #a9c2d2;
+  --muted:     #708595;
+  --line:      rgba(255, 255, 255, 0.14);
+
+  --accent:      #4aa8e0;
+  --accent-2:    #ef6a5e;
+  --accent-3:    #f4c44a;
+  --accent-ink:  #07131c;
+
+  --surface:      rgba(255, 255, 255, 0.07);
+  --surface-2:    rgba(255, 255, 255, 0.12);
+  --surface-solid:#13212d;
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-blur:   18px;
+  --gloss:        rgba(255, 255, 255, 0.20);
+  --sheen:        rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  --scrim:        rgba(0, 0, 0, 0.55);
+}
+
+/* ============================================================================
+   Accessibility floor — applies to every theme.
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}
+
+/* A high-contrast escape hatch some users will need; flattens glass to solids. */
+[data-contrast="high"] {
+  --surface: var(--surface-solid);
+  --surface-2: var(--surface-solid);
+  --glass-blur: 0px;
+  --line: color-mix(in srgb, var(--fg) 40%, transparent);
+}

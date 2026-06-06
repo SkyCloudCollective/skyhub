@@ -1,0 +1,29 @@
+# Caddyfile.example — serve the static SPA + proxy the API on one origin.
+# Copy to ops/Caddyfile and replace your-host.example with your domain.
+# Same-origin means the web app's API_BASE is '' (no CORS, tight CSP).
+
+your-host.example {
+	encode zstd gzip
+
+	# API → FastAPI (uvicorn) on the loopback.
+	handle /v1/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# Everything else → the prebuilt static SPA (apps/web/build).
+	handle {
+		root * /srv/ranchsamples/web
+		try_files {path} /index.html      # SPA fallback
+		file_server
+	}
+
+	# Headers: CSP-strict; connect-src self (same-origin API). COOP/COEP enable
+	# SharedArrayBuffer for the studio's lock-free param ring (optional).
+	header {
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Embedder-Policy "require-corp"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}

@@ -1,0 +1,55 @@
+# ── Rust ──
+/target
+**/target
+*.rs.bk
+
+# ── Node / SvelteKit ──
+node_modules/
+apps/web/.svelte-kit/
+apps/web/build/
+apps/web/.vite/
+.pnpm-store/
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+services/**/.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# ── Build artifacts & data (binaries live outside git) ──
+/dist/
+/_artifacts/
+*.dmg
+*.msi
+*.AppImage
+*.vst3
+*.clap
+*.wasm
+!tests/dsp/golden/*.wav
+
+# ── Local data / runtime ──
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/_uploads/
+
+# ── Secrets & operator-local config (NEVER commit) ──
+*.local
+*.local.*
+.env
+.env.*
+!.env.example
+**/secrets/
+ops/*.secret
+
+# ── Editor / OS ──
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# ── Agent/session scratch ──
+.claude/

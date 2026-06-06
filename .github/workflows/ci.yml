@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Rust: the DSP core + (later) instruments. Golden-render tests live here. ──
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test --workspace
+
+  # ── API: the single FastAPI service. ──
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - working-directory: services/api
+        run: |
+          uv sync
+          uv run pytest
+
+  # ── Web: SvelteKit static build + type-check. ──
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - working-directory: apps/web
+        run: |
+          pnpm run check
+          pnpm run build
+
+  # ── Residue gate: nothing internal may ship in an artifact. ──
+  audit:
+    runs-on: ubuntu-latest
+    needs: [web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Scans the source tree with GENERIC patterns. The deployment-specific
+      # pattern file (ci/audit-patterns.local) is gitignored and supplied only
+      # in the publish job, not here.
+      - run: python3 ci/audit-artifact.py apps services packages crates docs ops

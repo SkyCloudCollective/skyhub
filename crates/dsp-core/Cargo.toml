@@ -1,0 +1,16 @@
+[package]
+name = "dsp-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Real-time-safe DSP primitives shared by the web (wasm) and the native plugins."
+repository = "https://github.com/SKY-collective/ranchsamples"
+
+[lib]
+crate-type = ["rlib"]
+
+# dsp-core is intentionally dependency-free and no_std-friendly: nothing here
+# allocates, locks, or touches the OS, so it links cleanly into wasm and into a
+# real-time audio callback alike.
+[dependencies]

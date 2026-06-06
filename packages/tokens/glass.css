@@ -1,0 +1,67 @@
+/* ============================================================================
+   Liquid Glass skin — the shared surface treatment (Aero gloss on frosted glass).
+   Apply `.glass` to any panel/card/modal. Degrades gracefully:
+   • no backdrop-filter support  → falls back to --surface-solid (opaque).
+   • [data-contrast="high"]      → blur 0, solid surface (see tokens.css).
+   ============================================================================ */
+
+.glass {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  overflow: clip;
+}
+
+/* The Aero top sheen — a 1px-into-the-surface highlight, no extra DOM. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 42%;
+  background: linear-gradient(to bottom, var(--gloss), transparent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Opaque fallback when the platform can't blur. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--surface-solid); }
+}
+
+.glass-2 { background: var(--surface-2); }
+
+/* ── Bauhaus primitives ──────────────────────────────────────────────────── */
+
+/* A sparse primary accent rule — the only "decoration" Bauhaus allows. */
+.bauhaus-rule {
+  height: 4px;
+  border: 0;
+  background: linear-gradient(
+    to right,
+    var(--bauhaus-red) 0 33.33%,
+    var(--bauhaus-yellow) 33.33% 66.66%,
+    var(--bauhaus-blue) 66.66% 100%
+  );
+  border-radius: var(--radius-pill);
+}
+
+/* Strict grid helper (8px rhythm). */
+.grid { display: grid; gap: var(--space-4); }
+
+/* ── Shared interaction primitives ────────────────────────────────────────── */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+.accent-fill {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, black);
+}
+.accent-fill:hover { background: color-mix(in srgb, var(--accent) 88%, white); }

@@ -1,94 +1,118 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
-	import { api, type Facets, type Health } from '$lib/api';
+	import { getFacets, search, type Facets, type SearchParams, type SearchResult } from '$lib/api';
+	import SampleCard from '$lib/components/SampleCard.svelte';
+	import FacetSidebar from '$lib/components/FacetSidebar.svelte';
 
-	let health = $state<Health | null>(null);
+	let q = $state('');
+	let filters = $state<SearchParams>({});
 	let facets = $state<Facets | null>(null);
-	let online = $state<boolean | null>(null);
+	let result = $state<SearchResult | null>(null);
+	let loading = $state(true);
+	let offline = $state(false);
 
 	onMount(async () => {
 		try {
-			health = await api<Health>('/v1/health');
-			facets = await api<Facets>('/v1/facets');
-			online = true;
+			facets = await getFacets();
 		} catch {
-			online = false;
+			offline = true;
 		}
 	});
 
-	const stats = $derived(
-		facets
-			? [
-					{ n: facets.categories.length, label: $t('facet.categories') },
-					{ n: facets.instruments.length, label: $t('facet.instruments') },
-					{ n: facets.contributors.length, label: $t('facet.contributors') },
-					{ n: facets.packs.length, label: $t('facet.packs') }
-				]
-			: []
-	);
+	async function runSearch() {
+		loading = true;
+		try {
+			result = await search({ ...filters, q: q || undefined, limit: 100 });
+			offline = false;
+		} catch {
+			offline = true;
+			result = null;
+		}
+		loading = false;
+	}
+
+	// debounced search on any query/filter change (the JSON read registers deps)
+	let timer: ReturnType<typeof setTimeout>;
+	$effect(() => {
+		void (q + '|' + JSON.stringify(filters));
+		clearTimeout(timer);
+		timer = setTimeout(runSearch, 200);
+		return () => clearTimeout(timer);
+	});
 </script>
 
-<section class="hero glass">
-	<h1>{$t('home.welcome')}</h1>
-	<p class="lead">{$t('home.intro')}</p>
+<header class="bar glass">
+	<input
+		class="q"
+		type="search"
+		placeholder="Search samples…"
+		bind:value={q}
+		aria-label="Search"
+	/>
+	<span class="count muted">
+		{#if loading}…{:else if result}{result.total} result{result.total === 1 ? '' : 's'}{/if}
+	</span>
+</header>
 
-	{#if online === true}
-		<p class="status ok">● {$t('home.status.ok')}{health ? ` (v${health.version})` : ''}</p>
-	{:else if online === false}
-		<p class="status off">● {$t('home.status.offline')}</p>
-	{/if}
-</section>
-
-{#if stats.length}
-	<h2>{$t('home.facets')}</h2>
-	<div class="cards">
-		{#each stats as s (s.label)}
-			<div class="card glass">
-				<div class="num">{s.n}</div>
-				<div class="lbl muted">{s.label}</div>
-			</div>
-		{/each}
-	</div>
+{#if offline}
+	<p class="status off glass">● {$t('home.status.offline')}</p>
 {/if}
 
+<div class="layout">
+	<FacetSidebar {facets} bind:filters />
+
+	<section class="results">
+		{#if result && result.hits.length}
+			{#each result.hits as s (s.id)}
+				<SampleCard sample={s} />
+			{/each}
+		{:else if !loading && !offline}
+			<p class="empty muted glass">No samples match. Try clearing filters.</p>
+		{/if}
+	</section>
+</div>
+
 <style>
-	.hero {
-		padding: var(--space-6);
-		margin-bottom: var(--space-6);
+	.bar {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		padding: var(--space-3) var(--space-4);
+		margin-bottom: var(--space-4);
 	}
-	.lead {
-		font-size: var(--text-lg);
-		color: var(--fg-dim);
-		max-width: 60ch;
+	.q {
+		flex: 1;
+		font-size: var(--text-md);
+		background: var(--surface);
 	}
-	.status {
+	.count {
 		font-size: var(--text-sm);
-		margin: 0;
-	}
-	.status.ok {
-		color: var(--c-good);
+		white-space: nowrap;
 	}
 	.status.off {
 		color: var(--c-warn);
+		padding: var(--space-3) var(--space-4);
+		margin-bottom: var(--space-4);
 	}
-	.cards {
+	.layout {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-		gap: var(--space-4);
+		grid-template-columns: var(--rail-sidebar) 1fr;
+		gap: var(--space-5);
+		align-items: start;
 	}
-	.card {
-		padding: var(--space-5);
-		text-align: left;
+	.results {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
 	}
-	.num {
-		font-family: var(--font-display);
-		font-size: var(--text-3xl);
-		line-height: 1;
-		color: var(--accent);
+	.empty {
+		padding: var(--space-6);
+		text-align: center;
 	}
-	.lbl {
-		margin-top: var(--space-2);
-		font-size: var(--text-sm);
+	@media (max-width: 760px) {
+		.layout {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

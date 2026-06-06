@@ -26,6 +26,10 @@ DB_PATH = pathlib.Path(
 SAMPLES_ROOT = pathlib.Path(
     os.environ.get("RANCHSAMPLES_ROOT", REPO_ROOT / "samples" / "synthetic")
 )
+# Transcoded browser-playable previews (for originals that aren't, e.g. aiff).
+PREVIEWS_ROOT = pathlib.Path(
+    os.environ.get("RANCHSAMPLES_PREVIEWS", REPO_ROOT / "_meta" / "previews")
+)
 
 
 def connect(db_path: str | os.PathLike | None = None, read_only: bool = False) -> sqlite3.Connection:

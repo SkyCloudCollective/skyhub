@@ -61,3 +61,35 @@ def test_sample_detail_and_peaks(client):
 
 def test_missing_sample_404(client):
     assert client.get("/v1/sample/9999").status_code == 404
+
+
+def _first_id(client) -> int:
+    return client.get("/v1/search", params={"category": "loops"}).json()["hits"][0]["id"]
+
+
+def test_preview_serves_audio(client):
+    sid = _first_id(client)
+    r = client.get(f"/v1/preview/{sid}")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("audio/")
+    assert len(r.content) > 0
+
+
+def test_preview_supports_range(client):
+    sid = _first_id(client)
+    r = client.get(f"/v1/preview/{sid}", headers={"Range": "bytes=0-9"})
+    assert r.status_code == 206
+    assert len(r.content) == 10
+    assert r.headers["content-range"].startswith("bytes 0-9/")
+
+
+def test_download_is_attachment(client):
+    sid = _first_id(client)
+    r = client.get(f"/v1/download/{sid}")
+    assert r.status_code == 200
+    assert "attachment" in r.headers.get("content-disposition", "")
+    assert "loop_dawn.wav" in r.headers.get("content-disposition", "")
+
+
+def test_preview_missing_404(client):
+    assert client.get("/v1/preview/9999").status_code == 404

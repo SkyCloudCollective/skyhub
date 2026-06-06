@@ -36,6 +36,10 @@ data/*.db-wal
 data/*.db-shm
 data/_uploads/
 
+# Generated demo audio (regenerate with `uv run python gen_samples.py`) + previews
+samples/synthetic/
+_meta/previews/
+
 # ── Secrets & operator-local config (NEVER commit) ──
 *.local
 *.local.*

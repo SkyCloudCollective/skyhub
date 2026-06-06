@@ -6,15 +6,18 @@ land in P0; write paths (uploads, community) follow in P1+.
 """
 from __future__ import annotations
 
+import mimetypes
+import pathlib
 import sqlite3
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from . import __version__, auth, catalog
-from .db import init_db, connect
+from .db import PREVIEWS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
 @asynccontextmanager
@@ -101,3 +104,42 @@ def get_peaks(sample_id: int, conn: sqlite3.Connection = Depends(db)):
     if p is None:
         raise HTTPException(status_code=404, detail="sample not found")
     return p
+
+
+def _safe_abs(rel: str, is_preview: bool) -> pathlib.Path:
+    """Resolve a catalog rel_path under its root, guarding against traversal."""
+    base = (PREVIEWS_ROOT if is_preview else SAMPLES_ROOT).resolve()
+    target = (base / rel).resolve()
+    if base != target and base not in target.parents:
+        raise HTTPException(status_code=404, detail="not found")
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="file missing")
+    return target
+
+
+@app.get("/v1/preview/{sample_id}")
+def preview(sample_id: int, conn: sqlite3.Connection = Depends(db)):
+    # Browser-playable preview (Range supported by FileResponse → seekable <audio>).
+    resolved = catalog.resolve_file(conn, sample_id, prefer_preview=True)
+    if not resolved:
+        raise HTTPException(status_code=404, detail="sample not found")
+    rel, filename, is_preview = resolved
+    path = _safe_abs(rel, is_preview)
+    media = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return FileResponse(path, media_type=media)
+
+
+@app.get("/v1/download/{sample_id}")
+def download(sample_id: int, conn: sqlite3.Connection = Depends(db)):
+    # The original, full-quality file as an attachment (real bytes for the DAW).
+    resolved = catalog.resolve_file(conn, sample_id, prefer_preview=False)
+    if not resolved:
+        raise HTTPException(status_code=404, detail="sample not found")
+    rel, filename, _ = resolved
+    path = _safe_abs(rel, False)
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        filename=filename,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -15,9 +15,9 @@ CATEGORIES = [
 ]
 
 _SAMPLE_FIELDS = (
-    "id, title, contributor, pack, category, kind, instrument, bpm, musical_key, "
-    "duration_ms, brightness, noisiness, percussiveness, loudness, samplerate, "
-    "channels, bytes, original_format, created_at"
+    "id, filename, title, contributor, pack, category, kind, instrument, bpm, "
+    "musical_key, duration_ms, brightness, noisiness, percussiveness, loudness, "
+    "samplerate, channels, bytes, original_format, created_at"
 )
 
 
@@ -122,3 +122,16 @@ def search(
 
 def _sample_select(alias: str) -> str:
     return ", ".join(f"{alias}.{f.strip()}" for f in _SAMPLE_FIELDS.split(","))
+
+
+def resolve_file(conn: sqlite3.Connection, sample_id: int, prefer_preview: bool = True):
+    """Return (rel_path, filename) for serving, preferring a browser-playable
+    preview if one was transcoded. None if the sample doesn't exist."""
+    r = conn.execute(
+        "SELECT rel_path, filename, preview_rel FROM samples WHERE id=?", (sample_id,)
+    ).fetchone()
+    if not r:
+        return None
+    if prefer_preview and r["preview_rel"]:
+        return (r["preview_rel"], r["filename"], True)
+    return (r["rel_path"], r["filename"], False)

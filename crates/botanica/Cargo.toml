@@ -1,0 +1,13 @@
+[package]
+name = "botanica"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Botanica — a granular sample-morph instrument (inspired by Synplant; sound design by Tev). Built on dsp-core."
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+dsp-core = { workspace = true }

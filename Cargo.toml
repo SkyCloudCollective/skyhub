@@ -10,8 +10,9 @@
 resolver = "2"
 members = [
     "crates/dsp-core",
+    "crates/botanica",
     # added as each crate lands (keeps `cargo check` green meanwhile):
-    # "crates/botanica", "crates/phaseplan",
+    # "crates/phaseplan",
     # "crates/dsp-wasm", "crates/plugin-botanica", "crates/plugin-phaseplan",
     # "crates/desktop", "crates/xtask",
 ]

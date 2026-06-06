@@ -3,5 +3,12 @@
 version = 4
 
 [[package]]
+name = "botanica"
+version = "0.1.0"
+dependencies = [
+ "dsp-core",
+]
+
+[[package]]
 name = "dsp-core"
 version = "0.1.0"

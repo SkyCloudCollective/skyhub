@@ -71,9 +71,20 @@ def test_favorites_flow(client):
 
 
 def test_cannot_delete_favorites_collection(client):
-    client.get("/v1/favorites")  # ensures the system collection exists
+    sid = client.get("/v1/search").json()["hits"][0]["id"]
+    client.post("/v1/favorites", json={"sample_id": sid})  # a write creates the system collection
     fav = next(c for c in client.get("/v1/collections").json() if c["kind"] == "favorites")
     assert client.delete(f"/v1/collections/{fav['id']}").status_code == 403
+
+
+def test_favorites_read_does_not_create_collection(client):
+    # reading favourites must NOT write (this was a concurrency 500 source)
+    assert client.get("/v1/favorites/ids").json() == []
+    assert not any(c["kind"] == "favorites" for c in client.get("/v1/collections").json())
+    # a real favourite (a write) is what creates it
+    sid = client.get("/v1/search").json()["hits"][0]["id"]
+    client.post("/v1/favorites", json={"sample_id": sid})
+    assert any(c["kind"] == "favorites" for c in client.get("/v1/collections").json())
 
 
 # ── visibility (direct, multi-viewer) ────────────────────────────────────────

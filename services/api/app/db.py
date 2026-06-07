@@ -39,10 +39,14 @@ PROJECTS_ROOT = pathlib.Path(
 def connect(db_path: str | os.PathLike | None = None, read_only: bool = False) -> sqlite3.Connection:
     path = pathlib.Path(db_path) if db_path else DB_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
+    # check_same_thread=False: FastAPI's generator dependencies create the
+    # connection in the worker thread but may run the `finally: conn.close()` in
+    # a different threadpool thread, which otherwise raises under concurrency.
+    # We never share a single connection across threads concurrently, so this is safe.
     if read_only and path.exists():
-        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
     else:
-        conn = sqlite3.connect(path)
+        conn = sqlite3.connect(path, check_same_thread=False)
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA synchronous = NORMAL")
     conn.row_factory = sqlite3.Row

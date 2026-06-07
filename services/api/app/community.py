@@ -274,20 +274,32 @@ def remove_item(conn: sqlite3.Connection, cid: int, owner: str, sample_id: int) 
 
 
 # ── favourites convenience (system collection) ──────────────────────────────-
+def _favorites_id(conn: sqlite3.Connection, owner: str) -> int | None:
+    """Read-only lookup. Reads must NOT create the collection — doing so on a
+    GET turned concurrent first-loads into write-lock 500s (favourites used a
+    writable conn just to read). Only set_favorite creates it (on a real write)."""
+    r = conn.execute(
+        "SELECT id FROM collections WHERE owner=? AND kind='favorites'", (owner,)
+    ).fetchone()
+    return r["id"] if r else None
+
+
 def list_favorites(conn: sqlite3.Connection, owner: str) -> list[dict]:
-    cid = ensure_favorites(conn, owner)
-    return get_collection(conn, cid, owner)["items"]
+    cid = _favorites_id(conn, owner)
+    return get_collection(conn, cid, owner)["items"] if cid else []
 
 
 def set_favorite(conn: sqlite3.Connection, owner: str, sample_id: int, on: bool) -> bool:
-    cid = ensure_favorites(conn, owner)
+    cid = ensure_favorites(conn, owner)  # the only path that may create it
     if on:
         return add_item(conn, cid, owner, sample_id)
     return remove_item(conn, cid, owner, sample_id)
 
 
 def favorite_ids(conn: sqlite3.Connection, owner: str) -> list[int]:
-    cid = ensure_favorites(conn, owner)
+    cid = _favorites_id(conn, owner)
+    if not cid:
+        return []
     return [
         r[0]
         for r in conn.execute(

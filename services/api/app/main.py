@@ -296,12 +296,12 @@ class FavAdd(BaseModel):
 
 
 @app.get("/v1/favorites")
-def get_favorites(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+def get_favorites(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
     return community.list_favorites(conn, me)
 
 
 @app.get("/v1/favorites/ids")
-def get_favorite_ids(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+def get_favorite_ids(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
     return community.favorite_ids(conn, me)
 
 

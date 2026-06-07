@@ -21,6 +21,7 @@ use arp::Arp;
 use dsp_core::{Chorus, Delay, Drive, Oscillator, Reverb, Smoothed, Waveform};
 use freeze::GranularFreeze;
 use resonance::ResonanceBank;
+use strings::{StringBed, StringParams};
 use voice_characters::{blend, eff_macros, CharacterFilter};
 
 /// User-facing parameters. Macros are normalised 0..1 unless noted.
@@ -43,6 +44,10 @@ pub struct BotanicaParams {
     pub arp_density: f32,     // 0..1 arp trigger density
     pub freeze_size: f32,     // 0..1 granular grain size
     pub freeze_spray: f32,    // 0..1 granular position jitter
+    pub strings_level: f32,   // 0..1 choir/string bed mix (0 = off)
+    pub strings_air: f32,     // 0..1 breath/bow transient amount
+    pub strings_density: f32, // 0..1 chord-fire probability bias
+    pub strings_tone: f32,    // 0..1 dark→bright body of the bed
 }
 
 impl Default for BotanicaParams {
@@ -65,6 +70,10 @@ impl Default for BotanicaParams {
             arp_density: 0.4,
             freeze_size: 0.5,
             freeze_spray: 0.3,
+            strings_level: 0.0,
+            strings_air: 0.4,
+            strings_density: 0.4,
+            strings_tone: 0.5,
         }
     }
 }
@@ -111,6 +120,7 @@ pub struct Engine {
     res: ResonanceBank,
     arp: Arp,
     freeze_mod: GranularFreeze,
+    strings: StringBed,
     frozen: bool,
     drive: Drive,
     chorus: Chorus,
@@ -139,6 +149,7 @@ impl Engine {
             res: ResonanceBank::new(sr),
             arp: Arp::new(sr),
             freeze_mod: GranularFreeze::new(sr),
+            strings: StringBed::new(sr),
             frozen: false,
             drive: Drive::default(),
             chorus: Chorus::new(sr),
@@ -280,7 +291,29 @@ impl Engine {
             0.0
         };
 
-        let pre_fx = voiced + self.arp.process(dry) * 0.6 + frz;
+        // choir/string bed (fired by the same transients; the character's strings
+        // gene biases probability + airiness; skipped entirely when level is 0)
+        let strings_bus = if self.params.strings_level > 1e-4 || self.strings.active_voices() > 0 {
+            self.strings.set_params(
+                StringParams {
+                    level: self.params.strings_level,
+                    airiness: (self.params.strings_air * (0.6 + bl.strings.airy.max(0.0) * 3.0))
+                        .clamp(0.0, 1.0),
+                    body_tone: self.params.strings_tone,
+                    key: self.params.retune_semis.rem_euclid(12.0),
+                    ..StringParams::default()
+                },
+                eff.intensity,
+                eff.bloom,
+                self.params.strings_density,
+                bl.strings.prob.max(0.0),
+            );
+            self.strings.process(dry)
+        } else {
+            0.0
+        };
+
+        let pre_fx = voiced + self.arp.process(dry) * 0.6 + frz + strings_bus;
 
         // FX amounts driven by the effective macros + the character deltas
         self.drive.drive = self.drive_amt.next();
@@ -339,6 +372,29 @@ mod tests {
         e.process(&mut buf);
         assert!(buf.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
         assert!(rms(&buf) > 0.005, "engine was silent");
+    }
+
+    #[test]
+    fn strings_bed_adds_energy_and_stays_bounded() {
+        // a transient-rich sample so the bed's onset gate fires
+        let sample: Vec<f32> = (0..48_000)
+            .map(|i| if i % 6000 == 0 { 0.9 } else { 0.0 })
+            .collect();
+        let render = |level: f32| {
+            let mut e = Engine::new(48_000.0);
+            e.set_sample(sample.clone(), 48_000.0);
+            e.set_params(BotanicaParams {
+                strings_level: level,
+                ..BotanicaParams::default()
+            });
+            let mut buf = vec![0.0; 96_000];
+            e.process(&mut buf);
+            assert!(buf.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
+            rms(&buf)
+        };
+        let off = render(0.0);
+        let on = render(0.9);
+        assert!(on > off, "strings bed added no energy: off {off} on {on}");
     }
 
     #[test]

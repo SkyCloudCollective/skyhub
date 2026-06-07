@@ -118,6 +118,10 @@ pub unsafe extern "C" fn botanica_set_param(p: *mut BotanicaHandle, id: u32, val
         14 => q.arp_density = val,
         15 => q.freeze_size = val,
         16 => q.freeze_spray = val,
+        17 => q.strings_level = val,
+        18 => q.strings_air = val,
+        19 => q.strings_density = val,
+        20 => q.strings_tone = val,
         _ => return,
     }
     h.engine.set_params(h.params);

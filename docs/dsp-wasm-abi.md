@@ -84,6 +84,9 @@ Targets: 0 pitch (semitones), 1 cutoff (octaves), 2 wt-pos-A, 3 wt-pos-B,
 | 5 | xy_y (-1..1) | | 14 | arp_density |
 | 6 | freeze (0/1) | | 15 | freeze_size |
 | 7 | retune_semis | | 16 | freeze_spray |
-| 8 | character_q | | | |
+| 8 | character_q | | 17 | strings_level (0=off) |
+|   |  | | 18 | strings_air |
+|   |  | | 19 | strings_density |
+|   |  | | 20 | strings_tone |
 
 These ids are mirrored in `apps/web/src/lib/studio/params.ts`; keep both in sync.

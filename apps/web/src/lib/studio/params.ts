@@ -132,6 +132,15 @@ export const BOTANICA_GROUPS: Group[] = [
 	{
 		title: 'Tone',
 		ctls: [k(7, 'Retune', -12, 12, 0, 'st'), k(9, 'Filter LFO', 0, 1, 0.12)]
+	},
+	{
+		title: 'String bed',
+		ctls: [
+			k(17, 'Level', 0, 1, 0),
+			k(18, 'Air', 0, 1, 0.4),
+			k(19, 'Density', 0, 1, 0.4),
+			k(20, 'Tone', 0, 1, 0.5)
+		]
 	}
 ];
 

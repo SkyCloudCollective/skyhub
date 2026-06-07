@@ -5,17 +5,31 @@
 //! so it can't machine-gun; roam clamped to ≤7 semitones and quantised to a key
 //! mask; a hard-capped, pre-sized voice pool; envelopes clamped to 1.0 on
 //! retrigger (no amplitude stacking); deterministic (seeded) note choice.
+//!
+//! Sound design by **Tev** (the plucky-sine sparkle). De-click (A3): every voice
+//! onset rises through a short linear attack ramp (≈2 ms, sample-rate-aware)
+//! instead of jumping the gain to its peak — Tev heard the original instant
+//! onset as a "click" on the pluck. The ramp keeps the percussive character
+//! (fast but *continuous*) and, because voice-stealing also restarts through the
+//! ramp, a stolen voice can no longer step-discontinuity at full amplitude.
 
 use dsp_core::{clampf, flush_denormal, Oscillator, Smoothed, Waveform};
 
 const MAX_VOICES: usize = 16;
 const PER_TICK: usize = 3; // never spawn more than 3 at once
 
+/// Onset attack length. Short enough to stay percussive, long enough that the
+/// rising edge has no full-scale step (no click). Converted to a per-sample
+/// linear increment at the engine sample rate in `Arp::new`/`spawn`.
+const ATTACK_SECS: f32 = 0.002; // ≈2 ms
+
 #[derive(Clone, Copy)]
 struct ArpVoice {
     osc: Oscillator,
     freq: f32,
-    env: f32,
+    env: f32,  // decaying tail level (the voice's "peak" target)
+    gain: f32, // applied amplitude — ramps 0→env over the attack, then == env
+    attacking: bool,
     active: bool,
 }
 
@@ -43,6 +57,7 @@ pub struct Arp {
     rel: f32,
     last_decay: f32,
     rng: u32,
+    attack_inc: f32, // per-sample gain rise during a voice's onset ramp
     level_s: Smoothed,
     density_s: Smoothed,
 }
@@ -55,6 +70,8 @@ impl Arp {
                 osc: Oscillator::new(sr),
                 freq: 440.0,
                 env: 0.0,
+                gain: 0.0,
+                attacking: false,
                 active: false,
             }; MAX_VOICES],
             sample_rate: sr,
@@ -77,6 +94,9 @@ impl Arp {
             rel: 0.0,
             last_decay: -1.0,
             rng: 0x9E37_79B9,
+            // rise from 0 to peak over ATTACK_SECS; at least 1 sample so a 0 SR
+            // never divides by zero and the ramp is always finite.
+            attack_inc: 1.0 / (ATTACK_SECS * sr).max(1.0),
             level_s: Smoothed::new(0.0, 0.03, sr),
             density_s: Smoothed::new(0.4, 0.05, sr),
         };
@@ -179,7 +199,13 @@ impl Arp {
             });
             self.voices[i].freq = clampf(freq, 20.0, self.sample_rate * 0.45);
             self.voices[i].osc.reset();
-            self.voices[i].env = 1.0_f32.min(self.voices[i].env.max(0.0) + 1.0); // clamp to 1.0
+            // Target peak: clamp to 1.0 (no amplitude stacking). The audible
+            // amplitude (`gain`) keeps its current value and is ramped up to this
+            // peak over the attack — so neither a fresh nor a stolen voice steps
+            // to full scale, killing Tev's onset "click".
+            self.voices[i].env = 1.0_f32.min(self.voices[i].env.max(0.0) + 1.0);
+            self.voices[i].gain = self.voices[i].gain.clamp(0.0, self.voices[i].env);
+            self.voices[i].attacking = true;
             self.voices[i].active = true;
         }
     }
@@ -229,10 +255,27 @@ impl Arp {
                 // a touch of 2nd partial for sparkle
                 s += self.bright * 0.5 * (s * s * 2.0 - 1.0);
             }
-            acc += s * v.env;
+            // Attack ramp: rise the audible gain to the voice peak, then hand off
+            // to the shared exponential decay. This keeps the onset continuous
+            // (no full-scale step → no click) without softening the pluck.
+            if v.attacking {
+                v.gain += self.attack_inc;
+                if v.gain >= v.env {
+                    v.gain = v.env;
+                    v.attacking = false;
+                }
+            } else {
+                v.gain = v.env;
+            }
+            acc += s * v.gain;
             v.env = flush_denormal(v.env * self.rel);
+            if !v.attacking {
+                v.gain = v.env; // post-attack the gain tracks the decaying peak
+            }
             if v.env < 1e-4 {
                 v.active = false;
+                v.attacking = false;
+                v.gain = 0.0;
             }
         }
         // true tanh limiter (mandatory, last): |tanh| < 1 guarantees a bounded bus
@@ -243,7 +286,9 @@ impl Arp {
     pub fn reset(&mut self) {
         for v in self.voices.iter_mut() {
             v.active = false;
+            v.attacking = false;
             v.env = 0.0;
+            v.gain = 0.0;
         }
         self.clock = 0.0;
         self.cooldown = 0;
@@ -298,6 +343,52 @@ mod tests {
             let active = a.voices.iter().filter(|v| v.active).count();
             assert!(active <= 4, "exceeded voice cap: {active}");
         }
+    }
+
+    #[test]
+    fn onset_has_no_full_scale_step() {
+        // A3 (Tev's "click" on the pluck onset): the attack ramp must keep the
+        // sample-to-sample delta bounded — no instant jump to full amplitude.
+        // We drive a dense, hard-firing arp and assert |x[n]-x[n-1]| stays well
+        // under a full-scale step for the whole render.
+        let mut a = Arp::new(48_000.0);
+        a.set_params(1.0, 1.0, 0.0, 7.0, 0.2, 8);
+        let inp = impulses(48_000, 240); // frequent transients → frequent onsets
+        let mut prev = 0.0f32;
+        let mut max_delta = 0.0f32;
+        for &x in &inp {
+            let y = a.process(x);
+            assert!(y.is_finite());
+            max_delta = max_delta.max((y - prev).abs());
+            prev = y;
+        }
+        // A genuine click (env jumping to 1.0 against a non-zero osc value) would
+        // push a per-sample delta toward ~1.0; the 2 ms ramp keeps it small.
+        assert!(
+            max_delta < 0.35,
+            "onset stepped too hard (click): max delta {max_delta}"
+        );
+    }
+
+    #[test]
+    fn voice_gain_ramps_up_from_zero() {
+        // Inspect a single freshly-spawned voice: its applied gain must climb
+        // from ~0 through the attack rather than starting at the peak.
+        let mut a = Arp::new(48_000.0);
+        a.set_params(1.0, 1.0, 0.0, 0.0, 0.5, 1);
+        // Force one spawn deterministically.
+        a.spawn();
+        let v0 = a.voices[0];
+        assert!(v0.active && v0.attacking, "spawn did not arm the attack");
+        assert!(v0.gain <= 1e-3, "fresh voice did not start near zero gain");
+        // Run a couple of samples; the gain should rise toward the peak.
+        let g_start = a.voices[0].gain;
+        a.process(0.0);
+        a.process(0.0);
+        assert!(
+            a.voices[0].gain > g_start,
+            "attack did not raise the voice gain"
+        );
     }
 
     #[test]

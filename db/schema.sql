@@ -128,9 +128,19 @@ CREATE TABLE IF NOT EXISTS collection_items (
 );
 
 -- ── community: comments (threadable, editable) + reactions ──────────────────-
+-- Generic subject: comments/reactions attach to a (subject_type, sample_id)
+-- pair. subject_type='sample' is the original (and default) target; RanchTube
+-- adds subject_type='video'. The id column keeps the name `sample_id` for
+-- backward compatibility (it now means "subject id"). The hard FK to samples is
+-- dropped because the row can also point at a video; integrity is checked at the
+-- route layer (the subject must exist before a comment/reaction is accepted).
+-- NOTE: the `subject_type` column itself is added by migration
+-- 0002_social_generic_subject (forward-only ADD COLUMN), so it is intentionally
+-- absent from this base CREATE — the runner applies schema.sql then migrations,
+-- and ADD COLUMN must not collide with an already-present column on a fresh DB.
 CREATE TABLE IF NOT EXISTS comments (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    sample_id  INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE,
+    sample_id  INTEGER NOT NULL,                                    -- subject id
     parent_id  INTEGER REFERENCES comments(id) ON DELETE CASCADE,   -- threads (v1 gap)
     handle     TEXT NOT NULL,
     body       TEXT NOT NULL,
@@ -141,11 +151,11 @@ CREATE INDEX IF NOT EXISTS idx_comments_sample ON comments(sample_id);
 CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);
 
 CREATE TABLE IF NOT EXISTS reactions (
-    sample_id  INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE,
+    sample_id  INTEGER NOT NULL,                 -- subject id
     handle     TEXT NOT NULL,
     emoji      TEXT NOT NULL,
     created_at TEXT DEFAULT (datetime('now')),
-    PRIMARY KEY (sample_id, handle, emoji)   -- one of each emoji per member per sample
+    PRIMARY KEY (sample_id, handle, emoji)   -- one of each emoji per member per (sample) subject
 );
 CREATE INDEX IF NOT EXISTS idx_reactions_sample ON reactions(sample_id);
 
@@ -277,6 +287,26 @@ CREATE TABLE IF NOT EXISTS project_comments (
     created_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_pcom_project ON project_comments(project_id);
+
+-- ── RanchTube: community video (embeds only, phase 1) ───────────────────────-
+-- Members surface their work hosted elsewhere (YouTube / Vimeo / PeerTube). We
+-- never store or proxy the video; we store only the *provider* + the extracted
+-- *video_ref* (the bare id/path) after server-side allowlist validation. The
+-- embed URL is rebuilt app-side from (provider, video_ref) so a raw/attacker URL
+-- can never be reflected into an <iframe src> (anti iframe-injection / XSS).
+CREATE TABLE IF NOT EXISTS videos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    handle      TEXT NOT NULL,                       -- contributor (matrix localpart)
+    title       TEXT NOT NULL,
+    provider    TEXT NOT NULL,                        -- 'youtube' | 'vimeo' | 'peertube'
+    video_ref   TEXT NOT NULL,                        -- extracted id/path (validated), never the raw URL
+    url         TEXT NOT NULL,                         -- canonical watch URL (rebuilt, for "open on provider")
+    description TEXT,
+    category    TEXT,                                  -- free tag (tutorial, set, breakdown, …)
+    created_at  TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_videos_created ON videos(created_at);
+CREATE INDEX IF NOT EXISTS idx_videos_handle  ON videos(handle);
 
 -- ── migration bookkeeping (forward-only) ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS schema_migrations (

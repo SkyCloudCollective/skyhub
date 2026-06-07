@@ -1,0 +1,94 @@
+# Forgejo Actions mirror of .github/workflows/ci.yml — so the sovereign Forgejo
+# remote builds the same matrix as GitHub. Forgejo Actions uses GitHub-Actions
+# syntax; the actions are proxied from their upstream. This runs once an
+# act_runner labelled `ubuntu-latest` is registered on the Forgejo instance
+# (operator step — no runner = jobs queue but don't execute).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace -- -D warnings
+      - run: cargo test --workspace
+
+  plugins-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/build-plugins-linux.sh --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugins-linux-x86_64
+          path: dist/linux-x86_64/
+
+  plugins-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-xwin
+        run: cargo install cargo-xwin
+      - run: bash scripts/build-plugins-windows.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugins-windows-x86_64
+          path: dist/windows-x86_64/
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - working-directory: services/api
+        run: |
+          uv sync
+          uv run pytest
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: bash tools/build-wasm.sh
+      - working-directory: apps/web
+        run: |
+          pnpm run check
+          pnpm run build
+
+  audit:
+    runs-on: ubuntu-latest
+    needs: [web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 ci/audit-artifact.py apps services packages crates docs ops

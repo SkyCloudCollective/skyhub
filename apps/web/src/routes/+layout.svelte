@@ -25,7 +25,8 @@
 <footer>
 	<hr class="bauhaus-rule" />
 	<p class="muted">
-		RanchSamples · community-owned · AGPL-3.0 · sound design by Tev · meters by polarity
+		<a href="/about">RanchSamples — the SKY collective</a> · community-owned · AGPL-3.0 ·
+		sound design by Tev · meters by polarity
 	</p>
 </footer>
 

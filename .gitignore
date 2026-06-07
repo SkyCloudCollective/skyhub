@@ -39,6 +39,8 @@ data/projects/
 
 # Generated demo audio (regenerate with `uv run python gen_samples.py`) + previews
 samples/synthetic/
+# Real library audio (built locally with `import_v1.py`; never lives in git)
+samples/library/
 _meta/previews/
 
 # ── Secrets & operator-local config (NEVER commit) ──

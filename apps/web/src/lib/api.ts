@@ -170,6 +170,7 @@ export const patchProfile = (body: Partial<Pick<Profile, 'display_name' | 'bio' 
 export interface Me {
 	auth_enabled: boolean;
 	handle: string;
+	open_ugc: boolean; // public-UGC gate (E1) — when false, 'open' projects are disabled
 }
 export const getMe = () => api<Me>('/v1/me');
 

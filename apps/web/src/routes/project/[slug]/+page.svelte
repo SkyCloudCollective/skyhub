@@ -14,6 +14,7 @@
 		projectFileUrl,
 		projectComments,
 		addProjectComment,
+		getMe,
 		type ProjectFull
 	} from '$lib/api';
 
@@ -29,9 +30,11 @@
 	let inviteHandle = $state('');
 	let inviteRole = $state('editor');
 	let newComment = $state('');
+	let openUgc = $state(false); // E1 gate — whether 'open' visibility may be chosen
 
 	async function load() {
 		error = null;
+		openUgc = await getMe().then((m) => m.open_ugc).catch(() => false);
 		try {
 			data = await getProject(slug);
 			comments = await projectComments(data.project.id);
@@ -127,7 +130,7 @@
 				<select value={data.project.visibility} onchange={(e) => setVisibility(e.currentTarget.value)} aria-label="Visibility">
 					<option value="private">private</option>
 					<option value="unlisted">unlisted</option>
-					<option value="open">open</option>
+					{#if openUgc || data.project.visibility === 'open'}<option value="open">open</option>{/if}
 				</select>
 				<button class="ghost" onclick={destroy}>Delete</button>
 			{/if}

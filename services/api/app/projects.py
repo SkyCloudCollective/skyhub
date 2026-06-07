@@ -17,9 +17,19 @@ import re
 import secrets
 import sqlite3
 
+from . import config
+
 VISIBILITIES = ("private", "unlisted", "open")
 ROLES = ("owner", "editor", "viewer")
 EDIT_ROLES = ("owner", "editor")
+
+
+def _check_visibility(visibility: str) -> None:
+    """Validate a visibility, enforcing the public-UGC gate (E1, default off)."""
+    if visibility not in VISIBILITIES:
+        raise ValueError("bad visibility")
+    if visibility == "open" and not config.open_ugc_enabled():
+        raise ValueError("open collaboration is not enabled yet")
 
 
 def _row(r: sqlite3.Row) -> dict:
@@ -60,8 +70,7 @@ def role_of(conn: sqlite3.Connection, project_id: int, handle: str | None) -> st
 def create_project(
     conn, owner, title, *, kind=None, daw=None, visibility="private", license="all-rights-reserved"
 ) -> dict:
-    if visibility not in VISIBILITIES:
-        raise ValueError("bad visibility")
+    _check_visibility(visibility)
     slug = _unique_slug(conn, slugify(title))
     cur = conn.execute(
         "INSERT INTO collab_projects(owner,title,slug,kind,daw,visibility,license) "
@@ -174,7 +183,8 @@ def update_project(conn, pid, handle, fields) -> dict | None:
         if fields.get(col) is not None:
             sets.append(f"{col}=?")
             args.append(fields[col])
-    if fields.get("visibility") in VISIBILITIES:
+    if fields.get("visibility") is not None:
+        _check_visibility(fields["visibility"])
         sets.append("visibility=?")
         args.append(fields["visibility"])
     if sets:

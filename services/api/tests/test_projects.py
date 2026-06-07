@@ -9,6 +9,12 @@ import pytest
 from app import projects
 
 
+@pytest.fixture(autouse=True)
+def _open_ugc(monkeypatch):
+    # this module exercises the open-collaboration feature, so enable the gate
+    monkeypatch.setenv("RS_OPEN_UGC", "1")
+
+
 # ── HTTP (as 'me') ───────────────────────────────────────────────────────────
 def test_create_list_get_project(client):
     pid = client.post("/v1/projects", json={"title": "Night Drive", "daw": "ableton"}).json()["id"]

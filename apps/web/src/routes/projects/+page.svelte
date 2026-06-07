@@ -7,6 +7,7 @@
 		myInvites,
 		acceptInvite,
 		declineInvite,
+		getMe,
 		type Project,
 		type Invite
 	} from '$lib/api';
@@ -14,6 +15,7 @@
 	let projects = $state<Project[]>([]);
 	let invites = $state<Invite[]>([]);
 	let offline = $state(false);
+	let openUgc = $state(false); // E1 gate — public/open collaboration availability
 
 	// create form
 	let title = $state('');
@@ -33,6 +35,7 @@
 		} catch {
 			invites = [];
 		}
+		openUgc = await getMe().then((m) => m.open_ugc).catch(() => false);
 	}
 	onMount(load);
 
@@ -95,7 +98,7 @@
 		<select bind:value={visibility} aria-label="Visibility">
 			<option value="private">Private (invite only)</option>
 			<option value="unlisted">Unlisted (link)</option>
-			<option value="open">Open (free collab)</option>
+			{#if openUgc}<option value="open">Open (free collab)</option>{/if}
 		</select>
 		<button class="accent-fill" type="submit">Create</button>
 	</form>

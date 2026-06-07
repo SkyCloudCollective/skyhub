@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import __version__, auth, board, catalog, community, notify, projects, social
+from . import __version__, auth, board, catalog, community, config, notify, projects, social
 from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -74,7 +74,11 @@ def health():
 
 @app.get("/v1/me")
 def me():
-    return {"auth_enabled": auth.auth_enabled(), "handle": auth.current_handle()}
+    return {
+        "auth_enabled": auth.auth_enabled(),
+        "handle": auth.current_handle(),
+        "open_ugc": config.open_ugc_enabled(),
+    }
 
 
 # ── catalog ──────────────────────────────────────────────────────────────────

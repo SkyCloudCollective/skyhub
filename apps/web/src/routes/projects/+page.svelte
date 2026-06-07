@@ -17,6 +17,10 @@
 	let offline = $state(false);
 	let openUgc = $state(false); // E1 gate — public/open collaboration availability
 
+	// the API returns your projects + all open ones; split them for the UI
+	const mine = $derived(projects.filter((p) => p.role));
+	const discover = $derived(projects.filter((p) => !p.role && p.visibility === 'open'));
+
 	// create form
 	let title = $state('');
 	let daw = $state('ableton');
@@ -104,20 +108,34 @@
 	</form>
 </section>
 
+{#snippet card(p: Project)}
+	<a class="card glass" href={`/project/${p.slug ?? p.id}`}>
+		<div class="row1">
+			<span class="t">{p.title}</span>
+			<span class="vis {p.visibility}">{badge(p.visibility)}</span>
+		</div>
+		<p class="muted by">@{p.owner}{p.daw ? ` · ${p.daw}` : ''}{p.role ? ` · ${p.role}` : ''}</p>
+		<p class="muted counts">{p.members ?? 0} member{p.members === 1 ? '' : 's'} · {p.files ?? 0} file{p.files === 1 ? '' : 's'}</p>
+	</a>
+{/snippet}
+
+<h2 class="section">Your projects</h2>
 <div class="grid">
-	{#each projects as p (p.id)}
-		<a class="card glass" href={`/project/${p.slug ?? p.id}`}>
-			<div class="row1">
-				<span class="t">{p.title}</span>
-				<span class="vis {p.visibility}">{badge(p.visibility)}</span>
-			</div>
-			<p class="muted by">@{p.owner}{p.daw ? ` · ${p.daw}` : ''}{p.role ? ` · ${p.role}` : ''}</p>
-			<p class="muted counts">{p.members ?? 0} member{p.members === 1 ? '' : 's'} · {p.files ?? 0} file{p.files === 1 ? '' : 's'}</p>
-		</a>
+	{#each mine as p (p.id)}
+		{@render card(p)}
 	{:else}
 		{#if !offline}<p class="muted">No projects yet. Create one above.</p>{/if}
 	{/each}
 </div>
+
+{#if discover.length}
+	<h2 class="section">Open to collaborate</h2>
+	<div class="grid">
+		{#each discover as p (p.id)}
+			{@render card(p)}
+		{/each}
+	</div>
+{/if}
 
 <style>
 	.head {
@@ -163,10 +181,18 @@
 		flex: 1;
 		min-width: 200px;
 	}
+	.section {
+		font-size: var(--text-sm);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-display);
+		color: var(--fg-dim);
+		margin: var(--space-2) 0 var(--space-3);
+	}
 	.grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 		gap: var(--space-4);
+		margin-bottom: var(--space-4);
 	}
 	.card {
 		padding: var(--space-4);

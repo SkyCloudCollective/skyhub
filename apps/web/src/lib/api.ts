@@ -16,6 +16,21 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
 export const previewUrl = (id: number) => `${API_BASE}/v1/preview/${id}`;
 export const downloadUrl = (id: number) => `${API_BASE}/v1/download/${id}`;
 
+// ── galaxy (RanchMap timbral scatter) ───────────────────────────────────────
+export interface GalaxyPoint {
+	id: number;
+	title: string;
+	contributor: string | null;
+	category: string | null;
+	bpm: number | null;
+	duration_ms: number | null;
+	brightness: number | null;
+	percussiveness: number | null;
+	noisiness: number | null;
+	loudness: number | null;
+}
+export const getGalaxy = (limit = 2000) => api<GalaxyPoint[]>(`/v1/galaxy?limit=${limit}`);
+
 export interface Facets {
 	categories: string[];
 	kinds: string[];

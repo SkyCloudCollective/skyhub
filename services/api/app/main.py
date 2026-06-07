@@ -126,6 +126,11 @@ def get_peaks(sample_id: int, conn: sqlite3.Connection = Depends(db)):
     return p
 
 
+@app.get("/v1/galaxy")
+def galaxy(limit: int = Query(default=2000, ge=1, le=5000), conn: sqlite3.Connection = Depends(db)):
+    return catalog.galaxy(conn, limit)
+
+
 def _safe_abs(rel: str, is_preview: bool) -> pathlib.Path:
     """Resolve a catalog rel_path under its root, guarding against traversal."""
     base = (PREVIEWS_ROOT if is_preview else SAMPLES_ROOT).resolve()

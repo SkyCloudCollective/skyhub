@@ -47,6 +47,21 @@ def peaks(conn: sqlite3.Connection, sample_id: int) -> list | None:
     return json.loads(r["peaks_json"]) if r["peaks_json"] else []
 
 
+def galaxy(conn: sqlite3.Connection, limit: int = 2000) -> list[dict]:
+    """Compact timbre projection for the RanchMap scatter (only samples whose
+    timbre features are analysed). Just the columns the plot needs."""
+    limit = max(1, min(int(limit), 5000))
+    rows = conn.execute(
+        "SELECT id, title, contributor, category, bpm, duration_ms, "
+        "brightness, percussiveness, noisiness, loudness "
+        "FROM samples "
+        "WHERE brightness IS NOT NULL AND percussiveness IS NOT NULL "
+        "ORDER BY id LIMIT ?",
+        (limit,),
+    ).fetchall()
+    return [_row(r) for r in rows]
+
+
 def facets(conn: sqlite3.Connection) -> dict:
     def distinct(col: str) -> list[str]:
         return [

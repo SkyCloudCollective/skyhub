@@ -49,6 +49,23 @@ build-wasm:
 build-plugins:
     cargo build -p plugin-botanica -p plugin-phaseplan --release
 
+# bundle Linux plugins into dist/linux-x86_64/ (CLAP + VST3)
+bundle-linux:
+    bash scripts/build-plugins-linux.sh --release
+
+# bundle Windows plugins from Linux via cargo-xwin into dist/windows-x86_64/
+# Prerequisites: cargo install cargo-xwin && rustup target add x86_64-pc-windows-msvc
+bundle-windows:
+    bash scripts/build-plugins-windows.sh
+
+# build all reachable platforms + manifest (set RS_MAC_SSH_HOST for macOS)
+bundle-all:
+    bash scripts/build-all.sh
+
+# remote macOS build (requires RS_MAC_SSH_HOST env var)
+bundle-mac:
+    bash scripts/build-mac-remote.sh
+
 # ── quality gates ─────────────────────────────────────────────────────────────
 fmt:
     cargo fmt --all

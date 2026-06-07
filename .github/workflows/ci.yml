@@ -24,21 +24,45 @@ jobs:
       - run: cargo clippy --workspace -- -D warnings
       - run: cargo test --workspace
 
-  # ── Native plugins: build the CLAP/VST3 bundles (nih-plug needs no system
-  #    audio libs in `vst3` mode — no `standalone`). pluginval + the macOS/Windows
-  #    signed matrix run in a later release workflow (JAUNE: Marwan's keys). ──
-  plugins:
+  # ── Native plugins: build the CLAP/VST3 bundles.
+  #
+  #   linux  — runs directly on the Ubuntu runner (no system audio libs needed
+  #             in `vst3` mode — no `standalone`).
+  #   windows — cross-compiled from Linux via cargo-xwin (x86_64-pc-windows-msvc).
+  #             The MSVC CRT + SDK are auto-downloaded by xwin; lld-link is
+  #             bundled. No Windows runner required.
+  #   macos  — requires a real Mac runner; triggered by the separate release
+  #             workflow (JAUNE: needs Marwan's MAC_SIGN_ID for notarization).
+  #
+  # pluginval validation and signed release matrix run in a later release
+  # workflow (JAUNE: Marwan's keys required).
+  plugins-linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo xtask bundle plugin-phaseplan --release
-      - run: cargo xtask bundle plugin-botanica --release
+      - run: bash scripts/build-plugins-linux.sh --release
       - uses: actions/upload-artifact@v4
         with:
           name: plugins-linux-x86_64
-          path: target/bundled/
+          path: dist/linux-x86_64/
+
+  plugins-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-xwin
+        run: cargo install cargo-xwin
+      - run: bash scripts/build-plugins-windows.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugins-windows-x86_64
+          path: dist/windows-x86_64/
 
   # ── API: the single FastAPI service. ──
   api:

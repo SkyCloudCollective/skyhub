@@ -1,0 +1,17 @@
+[package]
+name = "plugin-phaseplan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "PhasePlan as a CLAP/VST3 instrument — a thin nih-plug wrapper around the phaseplan DSP crate (no signal processing here)."
+
+# cdylib = the plugin binary (CLAP/VST3 export); lib = let xtask/tests link it.
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+phaseplan = { path = "../phaseplan" }
+# Pinned nih-plug; default features (vst3) only — NO `standalone` (that pulls
+# JACK/ALSA, which aren't installed). CLAP export is built in, not feature-gated.
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", rev = "f36931f" }

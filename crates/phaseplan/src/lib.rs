@@ -199,6 +199,12 @@ impl Engine {
         (s * self.master.next()).tanh()
     }
 
+    /// Render one mono sample (for hosts that pull per-frame, e.g. the plugin).
+    #[inline]
+    pub fn render_sample(&mut self) -> f32 {
+        self.next_sample()
+    }
+
     /// Fill a mono buffer (offline render / tests / the worklet block).
     pub fn process(&mut self, out: &mut [f32]) {
         for x in out.iter_mut() {

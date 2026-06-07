@@ -1,0 +1,3 @@
+# `cargo xtask …` → run the bundler crate (nih_plug_xtask).
+[alias]
+xtask = "run --release --package xtask --"

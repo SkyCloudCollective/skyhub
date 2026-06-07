@@ -13,9 +13,11 @@ members = [
     "crates/botanica",
     "crates/phaseplan",
     "crates/dsp-wasm",
+    "crates/plugin-phaseplan",
+    "crates/plugin-botanica",
+    "crates/xtask",
     # added as each crate lands (keeps `cargo check` green meanwhile):
-    # "crates/plugin-botanica", "crates/plugin-phaseplan",
-    # "crates/desktop", "crates/xtask",
+    # "crates/desktop",
 ]
 
 [workspace.package]

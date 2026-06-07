@@ -1,0 +1,10 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Build orchestration — wraps nih_plug_xtask to bundle the plugins into .clap/.vst3."
+
+[dependencies]
+nih_plug_xtask = { git = "https://github.com/robbert-vdh/nih-plug.git", rev = "f36931f" }

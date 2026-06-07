@@ -1,0 +1,15 @@
+[package]
+name = "plugin-botanica"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Botanica as a CLAP/VST3 generative instrument — a thin nih-plug wrapper around the botanica DSP crate. Sound design by Tev."
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+botanica = { path = "../botanica" }
+# Pinned nih-plug; default features (vst3) only — no `standalone` (JACK/ALSA).
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", rev = "f36931f" }

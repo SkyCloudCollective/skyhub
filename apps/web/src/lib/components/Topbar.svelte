@@ -140,10 +140,44 @@
 		min-width: 38px;
 		text-align: center;
 	}
+	/* The profile is an <a>, so it doesn't inherit the gel <button> skin — give it
+	   its own: a circular gel bubble (avatar-ready), matching the action buttons. */
 	.acct {
-		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 38px;
+		height: 38px;
+		min-width: 0;
+		padding: 0;
+		border: 1px solid var(--glass-border);
+		border-radius: 50%;
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--gloss) 40%, var(--surface-2)),
+			var(--surface-2)
+		);
+		box-shadow:
+			inset 0 1px 0 var(--glass-hi),
+			inset 0 -2px 4px -2px var(--glass-lo),
+			0 3px 8px -4px var(--glass-lo);
 		color: var(--fg-dim);
-		line-height: 26px;
+		text-decoration: none;
+		font-size: var(--text-sm);
+		font-weight: 600;
+		line-height: 1;
+		transition:
+			transform var(--dur-fast) var(--ease-out),
+			box-shadow var(--dur-fast) var(--ease-out),
+			border-color var(--dur-fast) var(--ease-out),
+			color var(--dur-fast) var(--ease-out);
+	}
+	.acct:hover {
+		border-color: color-mix(in srgb, var(--accent) 50%, var(--glass-border));
+		color: var(--fg);
+	}
+	.acct:active {
+		transform: translateY(1px);
 	}
 
 	/* Mobile: wrap the bar; the nav becomes a horizontally-scrollable strip so

@@ -1,0 +1,610 @@
+/* ==========================================================================
+   RanchSamples theme for Jellyfin — Aero/Bauhaus/Liquid-Glass.
+   Credit: structure inspired by community Jellyfin themes; original
+   RanchSamples tokens.
+   Accessible by design: warm near-black (never #000), AA+ contrast,
+   left-aligned, honours prefers-reduced-motion, no alarm-red status.
+   ========================================================================== */
+
+/* Optional web fonts — Jellyfin CSP allows style-src https.
+   Placed FIRST (before :root) so the import isn't dropped. If it is blocked
+   (strict CSP / Google Fonts unreachable), the system-ui fallbacks below keep
+   the theme fully working — note the display face then reads generic.
+   Headers + body only; mono is NOT forced anywhere. */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+
+:root {
+  /* warm neutrals */
+  --rs-near-black: #1a1714;
+  --rs-off-white:  #f7f5f1;
+  --rs-n-800: #262320;
+  --rs-n-700: #3a352e;
+  --rs-n-600: #514a40;
+  --rs-n-500: #6f675b;
+  --rs-n-300: #c0b8aa;
+  --rs-n-100: #ece8e1;
+
+  /* Bauhaus primaries — SPARSE accents only */
+  --rs-bau-red:    #e2473b;
+  --rs-bau-yellow: #f4b71e;
+  --rs-bau-blue:   #2b6cd4;
+
+  /* Aero DARK */
+  --rs-page-bg:    #0b1320;
+  --rs-accent:     #3fa6ef;
+  --rs-accent-ink: #06121d;
+  --rs-accent-2:   #ef6a5e;
+  --rs-accent-3:   #f4c44a;
+
+  /* Liquid Glass surfaces — warm-tinted (carry the #1a1714 undertone) */
+  --rs-surface:       rgba(255,255,255,0.06);
+  --rs-surface-2:     rgba(255,255,255,0.11);
+  --rs-surface-warm:  rgba(26,23,20,0.34);
+  --rs-surface-warm2: rgba(26,23,20,0.46);
+  --rs-glass-border:  rgba(255,255,255,0.17);
+  --rs-glass-shadow:  0 34px 70px -18px rgba(0,0,0,.80), 0 12px 26px -12px rgba(0,0,0,.62);
+  --rs-glass-highlight: inset 0 1.5px 0 rgba(255,255,255,.36);
+  --rs-glass-blur:    blur(26px) saturate(185%) brightness(1.05);
+
+  /* radii */
+  --rs-r-sm: 10px;
+  --rs-r-md: 18px;
+  --rs-r-lg: 28px;
+  --rs-r-pill: 999px;
+
+  /* motion */
+  --rs-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* fonts */
+  --rs-font-display: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --rs-font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --rs-font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* --------------------------------------------------------------------------
+   1) PAGE BACKGROUND — the signature Aero dark gradient.
+   Anchored to html/body/.skinBody (the persistent surfaces that ALWAYS sit
+   behind content) PLUS a fixed full-viewport pseudo-element so the gradient
+   is guaranteed visible on home/detail/library, never occluded by media art.
+   The real media backdrops are made transparent (.backdropContainer) and the
+   per-item hero is softened so the gradient shows through consistently.
+   -------------------------------------------------------------------------- */
+html,
+body,
+.skinBody {
+  background-color: var(--rs-page-bg) !important;
+  color: var(--rs-off-white);
+  font-family: var(--rs-font-body);
+  background-image:
+    radial-gradient(1000px 640px at 12% -14%, #163a52 0%, transparent 56%),
+    radial-gradient(1180px 820px at 92% -8%, #241a44 0%, transparent 50%),
+    radial-gradient(900px 900px at 60% 122%, #0f3a39 0%, transparent 55%),
+    linear-gradient(165deg, #0f1d2e 0%, #0a121d 60%, #070d16 100%) !important;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* Belt-and-suspenders: a fixed gradient layer that always sits behind UI,
+   so even if a view paints its own opaque surface the signature look survives. */
+.skinBody::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1000px 640px at 12% -14%, #163a52 0%, transparent 56%),
+    radial-gradient(1180px 820px at 92% -8%, #241a44 0%, transparent 50%),
+    radial-gradient(900px 900px at 60% 122%, #0f3a39 0%, transparent 55%),
+    linear-gradient(165deg, #0f1d2e 0%, #0a121d 60%, #070d16 100%);
+}
+
+/* Let the gradient own the page: neutralise Jellyfin's default full-page
+   backdrop layer rather than relying on art being absent. */
+.backdropContainer {
+  background: transparent !important;
+  opacity: 0.5;
+}
+
+/* Soften (never hide) the per-item / detail hero backdrop so it blends in. */
+.backdropImage,
+.itemBackdrop,
+.backdropPage .backdropImage {
+  opacity: 0.55;
+}
+
+/* Body typography — scope text colour to body + true text classes only, so
+   Jellyfin's intentional secondary/muted tones survive in dashboards/admin. */
+body,
+.cardText,
+.listItemBodyText {
+  color: var(--rs-off-white);
+  font-family: var(--rs-font-body);
+}
+
+/* Headings get the Bauhaus display face (gentle — headers only) */
+h1, h2, h3,
+.sectionTitle,
+.detailPageTitle,
+.pageTitle {
+  font-family: var(--rs-font-display);
+  letter-spacing: 0.2px;
+}
+
+/* --------------------------------------------------------------------------
+   2) SKIN HEADER — Liquid Glass: warm-tinted translucent + blur + border.
+   Warm undertone (#1a1714) layered under the white-alpha highlight so the
+   glass reads RanchSamples-warm, not cool/generic.
+   -------------------------------------------------------------------------- */
+.skinHeader,
+.skinHeader-blurred,
+.skinHeader-withBackground,
+.skinHeader.skinHeader-blurred,
+.skinHeader.skinHeader-withBackground {
+  background-color: var(--rs-surface-warm) !important;
+  background-image: linear-gradient(to bottom,
+                    rgba(255,255,255,0.12) 0%,
+                    rgba(255,255,255,0.04) 100%) !important;
+  -webkit-backdrop-filter: var(--rs-glass-blur);
+  backdrop-filter: var(--rs-glass-blur);
+  border-bottom: 1px solid var(--rs-glass-border);
+  box-shadow: var(--rs-glass-highlight), 0 8px 26px -16px rgba(0,0,0,.7);
+  color: var(--rs-off-white);
+}
+
+.headerTop,
+.headerLeft,
+.headerRight {
+  color: var(--rs-off-white);
+}
+
+/* Header icon buttons — calm hover, accent on keyboard focus */
+.headerButton,
+.paper-icon-button-light {
+  color: var(--rs-n-100);
+  border-radius: var(--rs-r-pill);
+  transition: background-color .25s var(--rs-ease), color .25s var(--rs-ease);
+}
+.headerButton:hover,
+.paper-icon-button-light:hover {
+  background: var(--rs-surface-2);
+  color: var(--rs-off-white);
+}
+.headerButton:focus-visible,
+.paper-icon-button-light:focus-visible {
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Drawer / nav menu — warm glass panel
+   -------------------------------------------------------------------------- */
+.mainDrawer {
+  background: var(--rs-surface-warm2) !important;
+  -webkit-backdrop-filter: var(--rs-glass-blur);
+  backdrop-filter: var(--rs-glass-blur);
+  border-right: 1px solid var(--rs-glass-border);
+}
+.navMenuOption {
+  border-radius: var(--rs-r-md);
+  color: var(--rs-n-100);
+  transition: background-color .25s var(--rs-ease), color .25s var(--rs-ease);
+}
+.navMenuOption:hover {
+  background: var(--rs-surface-2);
+  color: var(--rs-off-white);
+}
+.navMenuOption.navMenuOption-selected,
+.navMenuOption-selected {
+  background: var(--rs-surface-2);
+  color: var(--rs-accent);
+  box-shadow: inset 3px 0 0 var(--rs-accent);
+}
+
+/* --------------------------------------------------------------------------
+   3) PRIMARY / SUBMIT BUTTONS — Aero gel with the accent.
+   Scoped TIGHTLY to genuine primary actions so the gel stays special
+   (sparse-accent doctrine). Other .raised buttons get a quiet warm-glass
+   treatment below, and destructive buttons are explicitly excluded.
+   -------------------------------------------------------------------------- */
+.button-submit,
+.raised.emby-button.button-submit,
+.raised.cardOverlayFab-primary,
+.detailButton-primary {
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, #3fa6ef 72%, white) 0%,
+    #3fa6ef 48%,
+    color-mix(in srgb, #3fa6ef 86%, black) 100%) !important;
+  color: var(--rs-accent-ink) !important;
+  border: 1px solid color-mix(in srgb, #3fa6ef 55%, black) !important;
+  border-radius: var(--rs-r-pill) !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
+    0 6px 16px -7px color-mix(in srgb, #3fa6ef 55%, transparent) !important;
+  font-family: var(--rs-font-display);
+  font-weight: 600;
+  text-transform: none;
+  transition: transform .2s var(--rs-ease), box-shadow .25s var(--rs-ease), filter .2s var(--rs-ease);
+}
+.button-submit:hover,
+.raised.emby-button.button-submit:hover,
+.raised.cardOverlayFab-primary:hover,
+.detailButton-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 60%, transparent),
+    0 10px 22px -8px color-mix(in srgb, #3fa6ef 60%, transparent) !important;
+}
+.button-submit:active,
+.raised.emby-button.button-submit:active,
+.detailButton-primary:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+.button-submit:focus-visible,
+.raised.emby-button.button-submit:focus-visible,
+.detailButton-primary:focus-visible {
+  outline: 2px solid var(--rs-off-white);
+  outline-offset: 2px;
+}
+
+/* Other raised buttons (secondary / destructive) — quiet warm glass, NOT gel.
+   Keeps them clearly distinct from the primary CTA, preserving affordance. */
+.raised.emby-button:not(.button-submit):not(.cardOverlayFab-primary) {
+  background: var(--rs-surface-2) !important;
+  color: var(--rs-off-white) !important;
+  border: 1px solid var(--rs-glass-border) !important;
+  border-radius: var(--rs-r-pill) !important;
+  box-shadow: var(--rs-glass-highlight);
+  font-family: var(--rs-font-display);
+  transition: background-color .2s var(--rs-ease), color .2s var(--rs-ease);
+}
+.raised.emby-button:not(.button-submit):not(.cardOverlayFab-primary):hover {
+  background: var(--rs-surface-warm) !important;
+}
+
+/* Non-raised / flat buttons stay quiet but accent-tinted on interaction */
+.emby-button:not(.raised):not(.paper-icon-button-light) {
+  color: var(--rs-n-100);
+  border-radius: var(--rs-r-pill);
+  transition: color .2s var(--rs-ease), background-color .2s var(--rs-ease);
+}
+.emby-button:not(.raised):not(.paper-icon-button-light):hover {
+  color: var(--rs-accent);
+}
+
+/* Card overlay action buttons — keep visible, never hide */
+.cardOverlayButton {
+  color: var(--rs-off-white);
+}
+.cardOverlayButton-br,
+.cardOverlayButton.cardOverlayFab-primary {
+  background: var(--rs-accent);
+  color: var(--rs-accent-ink);
+}
+
+/* --------------------------------------------------------------------------
+   4) INPUTS — recessed dark fields with a CLIP-PROOF accent focus ring.
+   Uses a real outline (never clipped by overflow:hidden ancestors) PLUS a
+   box-shadow glow, satisfying WCAG 2.4.7 even inside rounded/clipped panels.
+   -------------------------------------------------------------------------- */
+.emby-input,
+.emby-textarea,
+textarea.emby-textarea,
+input.emby-input {
+  background: rgba(0,0,0,0.28) !important;
+  color: var(--rs-off-white) !important;
+  border: 1px solid var(--rs-glass-border) !important;
+  border-radius: var(--rs-r-sm) !important;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.45);
+  font-family: var(--rs-font-body);
+  transition: border-color .2s var(--rs-ease), box-shadow .2s var(--rs-ease), background-color .2s var(--rs-ease);
+}
+.emby-input::placeholder {
+  color: var(--rs-n-300);
+}
+.emby-input:focus,
+.emby-textarea:focus,
+input.emby-input:focus {
+  border-color: var(--rs-accent) !important;
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.45),
+    0 0 0 3px color-mix(in srgb, #3fa6ef 35%, transparent) !important;
+  background: rgba(0,0,0,0.34) !important;
+}
+.inputLabel,
+.inputLabelUnfocused {
+  color: var(--rs-n-300);
+  font-family: var(--rs-font-body);
+}
+.inputLabelFocused {
+  color: var(--rs-accent) !important;
+}
+.inputContainer {
+  color: var(--rs-off-white);
+}
+
+/* Selects */
+.emby-select,
+select.emby-select {
+  background: rgba(0,0,0,0.28) !important;
+  color: var(--rs-off-white) !important;
+  border: 1px solid var(--rs-glass-border) !important;
+  border-radius: var(--rs-r-sm) !important;
+}
+.emby-select:focus {
+  border-color: var(--rs-accent) !important;
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #3fa6ef 35%, transparent) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5) CARDS — soft radius + warm glass border, hover lift.
+   No backdrop-filter on cards (they overlay their own poster, not the
+   gradient, so blur barely shows + costs GPU on big grids). Clip is moved
+   to the image container; the box itself is NOT clipped, so corner shadows,
+   indicators and overlay focus rings survive.
+   -------------------------------------------------------------------------- */
+.cardBox,
+.card .cardBox {
+  background: var(--rs-surface-warm);
+  border: 1px solid var(--rs-glass-border);
+  border-radius: var(--rs-r-md);
+  box-shadow: var(--rs-glass-highlight), 0 10px 26px -16px rgba(0,0,0,.7);
+  transition: transform .3s var(--rs-ease), box-shadow .3s var(--rs-ease), border-color .3s var(--rs-ease);
+}
+/* Round + clip the poster only (specificity 0,2,0 to reliably win) */
+.card .cardImageContainer {
+  border-radius: var(--rs-r-md);
+  overflow: hidden;
+}
+.card:hover .cardBox,
+.cardBox:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, #3fa6ef 45%, var(--rs-glass-border));
+  box-shadow:
+    var(--rs-glass-highlight),
+    0 22px 48px -18px rgba(0,0,0,.78),
+    0 0 0 1px color-mix(in srgb, #3fa6ef 30%, transparent);
+}
+.cardText {
+  color: var(--rs-off-white);
+}
+.cardText-secondary,
+.cardText.cardText-secondary {
+  color: var(--rs-n-300);
+}
+
+/* List items as soft glass rows */
+.listItem {
+  border-radius: var(--rs-r-md);
+  transition: background-color .2s var(--rs-ease);
+}
+.listItem:hover {
+  background: var(--rs-surface);
+}
+
+/* Detail page primary container — glass slab */
+.detailPagePrimaryContainer {
+  border-radius: var(--rs-r-lg);
+}
+
+/* --------------------------------------------------------------------------
+   6) LOGIN FORM PANEL — a glass card (theme-agnostic, dark).
+   Glass surface is applied to the form wrappers AND their typical centered
+   page container so the panel frames the login consistently.
+   -------------------------------------------------------------------------- */
+.manualLoginForm,
+.visualLoginForm {
+  background: var(--rs-surface-2);
+  -webkit-backdrop-filter: var(--rs-glass-blur);
+  backdrop-filter: var(--rs-glass-blur);
+  border: 1px solid var(--rs-glass-border);
+  border-radius: var(--rs-r-lg);
+  box-shadow: var(--rs-glass-shadow), var(--rs-glass-highlight);
+  padding: 28px 26px;
+  max-width: 460px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
+   7) LOGIN DISCLAIMER — quiet, muted, but full-size & crisp (dyslexia floor).
+   Muting via colour only (n-300); no opacity fade, no sub-body shrink.
+   -------------------------------------------------------------------------- */
+.loginDisclaimer,
+.loginDisclaimerContainer {
+  color: var(--rs-n-300) !important;
+  font-family: var(--rs-font-body);
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
+   8) ACCENT — links, active tabs, checkboxes, sliders, spinners.
+   Mostly Aero blue, with SPARSE secondary accents (coral / gold) and one
+   Bauhaus signal so the palette reads RanchSamples, not mono-blue.
+   -------------------------------------------------------------------------- */
+a,
+.button-link,
+.emby-button.button-link {
+  color: var(--rs-accent);
+  text-decoration: none;
+  transition: color .2s var(--rs-ease);
+}
+a:hover,
+.button-link:hover {
+  color: color-mix(in srgb, #3fa6ef 80%, white);
+  text-decoration: underline;
+}
+
+/* Tabs (header + section) — active = accent text + an EXPLICIT underline bar.
+   Jellyfin's active class is the concatenated `emby-tab-button-active`
+   (no separate `.active`, no ::after underline), so we draw the bar via
+   box-shadow inset on the real active class. */
+.headerTabs .emby-tab-button,
+.sectionTabs .emby-tab-button,
+.emby-tab-button {
+  color: var(--rs-n-300);
+  font-family: var(--rs-font-display);
+  border-radius: var(--rs-r-sm) var(--rs-r-sm) 0 0;
+  transition: color .2s var(--rs-ease), box-shadow .2s var(--rs-ease);
+}
+.emby-tab-button:hover {
+  color: var(--rs-off-white);
+}
+.headerTabs .emby-tab-button-active,
+.sectionTabs .emby-tab-button-active,
+.emby-tab-button-active {
+  color: var(--rs-accent) !important;
+  box-shadow: inset 0 -3px 0 var(--rs-accent);
+}
+
+/* Checkboxes — tint the actual checked glyph + outline (emby-checkbox uses
+   .checkboxOutline > .checkboxIcon-checked; no MDL in Jellyfin 10.11). */
+.emby-checkbox:checked + span + .checkboxOutline,
+.emby-checkbox:checked + .checkboxLabel .checkboxOutline,
+.checkboxOutline {
+  color: var(--rs-accent);
+}
+.emby-checkbox:checked + span + .checkboxOutline > .checkboxIcon-checked,
+.checkboxIcon-checked {
+  color: var(--rs-accent);
+}
+.checkboxLabel {
+  color: var(--rs-off-white);
+}
+
+/* Native range fallback (harmless; primary sliders are emby-slider, below) */
+input[type="range"]::-webkit-slider-thumb {
+  background: var(--rs-accent);
+}
+input[type="range"]::-moz-range-thumb {
+  background: var(--rs-accent);
+}
+
+/* Spinners / progress — accent, NEVER alarm red */
+.mdl-spinner__layer-1,
+.mdl-spinner__layer-2,
+.mdl-spinner__layer-3,
+.mdl-spinner__layer-4 {
+  border-color: var(--rs-accent) !important;
+}
+.docspinner .mdl-spinner__layer,
+progress.itemProgressBar::-webkit-progress-value,
+.itemLinearProgress .itemLinearProgressBar {
+  background-color: var(--rs-accent) !important;
+}
+
+/* SPARSE secondary accents — give the palette its RanchSamples richness:
+   resume/in-progress = gold; (kept minimal, one purposeful use each). */
+.itemProgressBar,
+.itemLinearProgress .itemLinearProgressBar.itemLinearProgressBar-resume {
+  background-color: var(--rs-accent-3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   9) DIALOGS / ACTION SHEETS / MENUS — warm glass surfaces, rounded.
+   Includes the real inner scroller class (.actionSheetScroller) so the menu
+   body itself carries the glass, not just the outer wrapper.
+   -------------------------------------------------------------------------- */
+.dialog,
+.formDialog,
+.actionSheet,
+.actionSheetScroller,
+.dialogContent {
+  background: var(--rs-surface-warm2) !important;
+  -webkit-backdrop-filter: var(--rs-glass-blur);
+  backdrop-filter: var(--rs-glass-blur);
+  border: 1px solid var(--rs-glass-border);
+  border-radius: var(--rs-r-lg);
+  box-shadow: var(--rs-glass-shadow), var(--rs-glass-highlight);
+  color: var(--rs-off-white);
+}
+.actionSheetMenuItem {
+  border-radius: var(--rs-r-sm);
+  color: var(--rs-off-white);
+  transition: background-color .18s var(--rs-ease);
+}
+.actionSheetMenuItem:hover {
+  background: var(--rs-surface-2);
+}
+
+/* --------------------------------------------------------------------------
+   STATUS / PILLS — calm tones, NEVER alarm red on status.
+   Scoped to the specific indicators (counts / played) rather than the broad
+   base `.indicator`, so meaningful badge distinctions survive.
+   -------------------------------------------------------------------------- */
+.countIndicator {
+  background-color: var(--rs-accent) !important;
+  color: var(--rs-accent-ink) !important;
+  border-radius: var(--rs-r-pill);
+}
+.playedIndicator {
+  background-color: var(--rs-accent-2) !important;
+  color: var(--rs-accent-ink) !important;
+  border-radius: var(--rs-r-pill);
+}
+
+/* --------------------------------------------------------------------------
+   PLAYBACK / OSD — keep controls fully usable; only tint the real emby-slider
+   seek/progress to the accent. Do NOT restyle OSD controls aggressively.
+   -------------------------------------------------------------------------- */
+.mdl-slider-background-lower,
+.emby-slider-background-lower {
+  background: var(--rs-accent) !important;
+}
+.sliderBubble {
+  background: var(--rs-accent) !important;
+  color: var(--rs-accent-ink);
+}
+input.mdl-slider::-webkit-slider-thumb {
+  background: var(--rs-accent);
+}
+input.mdl-slider::-moz-range-thumb {
+  background: var(--rs-accent);
+}
+
+/* --------------------------------------------------------------------------
+   OPTIONAL — light mode (kept small). Dark UI is the primary target; the dark
+   accent (#3fa6ef ≈ 7:1) already passes AA, so for a light-preferring OS we
+   use a darkened link token (#1565c0 ≈ 4.6:1 on white) to keep text AA.
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: light) {
+  a, .button-link, .emby-button.button-link {
+    color: #1565c0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   MOTION — honour reduced-motion as a hard accessibility floor.
+   Kill transitions/animations globally, BUT (a) preserve a slow, non-flashing
+   spinner so busy-state feedback survives (WCAG 2.3.3 reduces motion, it does
+   not destroy status), and (b) neutralise hover translate jumps so there is
+   zero positional shift for motion-sensitive users.
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+  /* Keep loading spinners spinning (slow + steady) so "busy" stays legible. */
+  .mdl-spinner,
+  .mdl-spinner *,
+  [class*="spinner"] {
+    animation-name: revert !important;
+    animation-duration: 2s !important;
+  }
+  /* Convey hover/active via border + shadow only — no positional jump. */
+  .card:hover .cardBox,
+  .cardBox:hover,
+  .button-submit:hover,
+  .raised.emby-button.button-submit:hover,
+  .detailButton-primary:hover {
+    transform: none !important;
+  }
+}

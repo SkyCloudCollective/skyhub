@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { t, locale, setLocale, type Locale } from '$lib/i18n';
-	import { theme, toggleTheme } from '$lib/theme';
 	import NotificationBell from './NotificationBell.svelte';
-	import Icon from './Icon.svelte';
+	import ThemePicker from './ThemePicker.svelte';
 
 	const links: { href: string; key: Parameters<typeof $t>[0] }[] = [
 		{ href: '/', key: 'nav.library' },
@@ -42,9 +41,7 @@
 	<div class="actions">
 		<NotificationBell />
 		<a class="ghost acct" href="/u/me" title="Profile" aria-label="Profile">me</a>
-		<button class="ghost" onclick={toggleTheme} title={$t('theme.toggle')} aria-label={$t('theme.toggle')}>
-			<Icon name={$theme === 'aero-dark' ? 'moon' : 'sun'} />
-		</button>
+		<ThemePicker />
 		<button
 			class="ghost"
 			onclick={() => setLocale(nextLang($locale))}

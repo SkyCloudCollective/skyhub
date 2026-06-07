@@ -147,6 +147,12 @@ def get_facets(conn: sqlite3.Connection = Depends(db)):
     return catalog.facets(conn)
 
 
+@app.get("/v1/hub")
+def get_hub():
+    """External self-hosted services this instance links to (env-configured)."""
+    return {"services": config.hub_services()}
+
+
 @app.get("/v1/search")
 def get_search(
     q: Optional[str] = None,

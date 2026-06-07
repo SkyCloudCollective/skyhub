@@ -115,6 +115,17 @@ export const getFacets = () => api<Facets>('/v1/facets');
 export const getHealth = () => api<Health>('/v1/health');
 export const getPeaks = (id: number) => api<number[][]>(`/v1/peaks/${id}`);
 
+// ── hub: external self-hosted services (env-configured per instance) ─────────
+export interface HubService {
+	key: string;
+	name: string;
+	tool: string;
+	desc: string;
+	accent: string;
+	url: string;
+}
+export const getHub = () => api<{ services: HubService[] }>('/v1/hub');
+
 // ── community: profiles + collections + favourites ──────────────────────────
 export interface Collection {
 	id: number;

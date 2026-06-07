@@ -9,6 +9,7 @@
 		{ href: '/studio', key: 'nav.studio' },
 		{ href: '/galaxy', key: 'nav.galaxy' },
 		{ href: '/tube', key: 'nav.tube' },
+		{ href: '/media', key: 'nav.media' },
 		{ href: '/projects', key: 'nav.projects' },
 		{ href: '/members', key: 'nav.members' },
 		{ href: '/board', key: 'nav.board' },

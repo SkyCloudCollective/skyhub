@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import sqlite3
 
+from . import notify
+
 MAX_EMOJI_LEN = 8
 
 
-def _sample_exists(conn: sqlite3.Connection, sample_id: int) -> bool:
-    return conn.execute("SELECT 1 FROM samples WHERE id=?", (sample_id,)).fetchone() is not None
+def _sample(conn: sqlite3.Connection, sample_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT id, title, contributor FROM samples WHERE id=?", (sample_id,)
+    ).fetchone()
 
 
 # ── comments ─────────────────────────────────────────────────────────────────
@@ -32,7 +36,8 @@ def add_comment(
     body: str,
     parent_id: int | None = None,
 ) -> dict | None:
-    if not _sample_exists(conn, sample_id):
+    s = _sample(conn, sample_id)
+    if s is None:
         return None
     body = (body or "").strip()
     if not body:
@@ -44,6 +49,10 @@ def add_comment(
     cur = conn.execute(
         "INSERT INTO comments(sample_id, parent_id, handle, body) VALUES(?,?,?,?)",
         (sample_id, parent_id, handle, body),
+    )
+    notify.add(
+        conn, s["contributor"], "comment", handle,
+        subject_type="sample", subject_id=sample_id, data={"title": s["title"]},
     )
     conn.commit()
     r = conn.execute("SELECT * FROM comments WHERE id=?", (cur.lastrowid,)).fetchone()
@@ -80,7 +89,8 @@ def reactions(conn: sqlite3.Connection, sample_id: int, viewer: str | None) -> d
 def toggle_reaction(
     conn: sqlite3.Connection, sample_id: int, handle: str, emoji: str, on: bool
 ) -> dict | None:
-    if not _sample_exists(conn, sample_id):
+    s = _sample(conn, sample_id)
+    if s is None:
         return None
     emoji = (emoji or "").strip()
     if not emoji or len(emoji) > MAX_EMOJI_LEN:
@@ -89,6 +99,10 @@ def toggle_reaction(
         conn.execute(
             "INSERT OR IGNORE INTO reactions(sample_id, handle, emoji) VALUES(?,?,?)",
             (sample_id, handle, emoji),
+        )
+        notify.add(
+            conn, s["contributor"], "reaction", handle,
+            subject_type="sample", subject_id=sample_id, data={"title": s["title"], "emoji": emoji},
         )
     else:
         conn.execute(

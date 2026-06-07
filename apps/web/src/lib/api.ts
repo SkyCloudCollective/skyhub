@@ -129,6 +129,9 @@ export interface Profile {
 	avatar_path: string | null;
 	links: { label: string; url: string }[];
 	sample_count: number;
+	followers: number;
+	following: number;
+	you_follow: boolean;
 }
 
 async function send<T>(path: string, method: string, body?: unknown): Promise<T | null> {
@@ -321,3 +324,31 @@ export const deleteSampleComment = (id: number, commentId: number) =>
 export const sampleReactions = (id: number) => api<Reactions>(`/v1/sample/${id}/reactions`);
 export const toggleReaction = (id: number, emoji: string, on: boolean) =>
 	send<Reactions>(`/v1/sample/${id}/reactions`, on ? 'POST' : 'DELETE', { emoji });
+
+// ── follows, feed, notifications ────────────────────────────────────────────
+export interface FollowStatus {
+	followers: number;
+	following: number;
+	you_follow: boolean;
+}
+export interface Notification {
+	id: number;
+	kind: string; // comment | reaction | follow | collect | system
+	actor: string;
+	subject_type: string | null;
+	subject_id: number | null;
+	data: Record<string, unknown> | null;
+	read: boolean;
+	created_at: string;
+}
+export interface Inbox {
+	items: Notification[];
+	unread: number;
+}
+
+export const followUser = (handle: string, on: boolean) =>
+	send<FollowStatus>(`/v1/follow/${encodeURIComponent(handle)}`, on ? 'POST' : 'DELETE');
+export const getFollowing = () => api<string[]>('/v1/me/following');
+export const getFeed = () => api<Sample[]>('/v1/feed');
+export const getNotifications = () => api<Inbox>('/v1/notifications');
+export const readNotifications = () => send<{ unread: number }>('/v1/notifications/read', 'POST');

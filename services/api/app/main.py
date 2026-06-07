@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import __version__, auth, board, catalog, community, projects, social
+from . import __version__, auth, board, catalog, community, notify, projects, social
 from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -169,13 +169,15 @@ class ProfilePatch(BaseModel):
 
 
 @app.get("/v1/profile/{handle}")
-def get_profile(handle: str, conn: sqlite3.Connection = Depends(db)):
-    return community.get_profile(conn, auth.clean_handle(handle))
+def get_profile(
+    handle: str, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)
+):
+    return community.get_profile(conn, auth.clean_handle(handle), viewer=me)
 
 
 @app.get("/v1/me/profile")
 def my_profile(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
-    return community.get_profile(conn, me)
+    return community.get_profile(conn, me, viewer=me)
 
 
 @app.patch("/v1/me/profile")
@@ -673,3 +675,38 @@ def remove_sample_reaction(
     if res is None:
         raise HTTPException(status_code=404, detail="sample not found")
     return res
+
+
+# ── follows + feed + notifications ───────────────────────────────────────────-
+@app.post("/v1/follow/{handle}")
+def follow(handle: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    return _forbidden_to_http(
+        lambda: community.set_follow(conn, me, auth.clean_handle(handle), True)
+    )
+
+
+@app.delete("/v1/follow/{handle}")
+def unfollow(handle: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    return _forbidden_to_http(
+        lambda: community.set_follow(conn, me, auth.clean_handle(handle), False)
+    )
+
+
+@app.get("/v1/me/following")
+def my_following(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return community.following_of(conn, me)
+
+
+@app.get("/v1/feed")
+def my_feed(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return community.feed(conn, me)
+
+
+@app.get("/v1/notifications")
+def get_notifications(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return notify.list_for(conn, me)
+
+
+@app.post("/v1/notifications/read")
+def read_notifications(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    return notify.mark_all_read(conn, me)

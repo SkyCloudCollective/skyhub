@@ -15,11 +15,13 @@ import json
 import secrets
 import sqlite3
 
+from . import notify
+
 VISIBILITIES = ("private", "unlisted", "public")
 
 
 # ── profiles ─────────────────────────────────────────────────────────────────
-def get_profile(conn: sqlite3.Connection, handle: str) -> dict:
+def get_profile(conn: sqlite3.Connection, handle: str, viewer: str | None = None) -> dict:
     r = conn.execute("SELECT * FROM profiles WHERE handle=?", (handle,)).fetchone()
     sample_count = conn.execute(
         "SELECT COUNT(*) FROM samples WHERE contributor=?", (handle,)
@@ -41,7 +43,61 @@ def get_profile(conn: sqlite3.Connection, handle: str) -> dict:
             }
         )
     base["sample_count"] = sample_count
+    base.update(follow_status(conn, handle, viewer))
     return base
+
+
+# ── follows (the social graph) ───────────────────────────────────────────────
+def follow_status(conn: sqlite3.Connection, handle: str, viewer: str | None) -> dict:
+    followers = conn.execute(
+        "SELECT COUNT(*) FROM follows WHERE followed=?", (handle,)
+    ).fetchone()[0]
+    following = conn.execute(
+        "SELECT COUNT(*) FROM follows WHERE follower=?", (handle,)
+    ).fetchone()[0]
+    you_follow = bool(
+        viewer
+        and conn.execute(
+            "SELECT 1 FROM follows WHERE follower=? AND followed=?", (viewer, handle)
+        ).fetchone()
+    )
+    return {"followers": followers, "following": following, "you_follow": you_follow}
+
+
+def set_follow(conn: sqlite3.Connection, follower: str, followed: str, on: bool) -> dict:
+    if follower == followed:
+        raise ValueError("cannot follow yourself")
+    if on:
+        conn.execute(
+            "INSERT OR IGNORE INTO follows(follower, followed) VALUES(?,?)", (follower, followed)
+        )
+        notify.add(conn, followed, "follow", follower)
+    else:
+        conn.execute("DELETE FROM follows WHERE follower=? AND followed=?", (follower, followed))
+    conn.commit()
+    return follow_status(conn, followed, follower)
+
+
+def following_of(conn: sqlite3.Connection, handle: str) -> list[str]:
+    return [
+        r[0]
+        for r in conn.execute(
+            "SELECT followed FROM follows WHERE follower=? ORDER BY created_at DESC", (handle,)
+        )
+    ]
+
+
+def feed(conn: sqlite3.Connection, viewer: str, limit: int = 30) -> list[dict]:
+    """Recent samples contributed by the people `viewer` follows."""
+    rows = conn.execute(
+        "SELECT s.id, s.filename, s.title, s.contributor, s.pack, s.category, s.kind, "
+        "s.instrument, s.bpm, s.musical_key, s.duration_ms, s.created_at "
+        "FROM samples s "
+        "WHERE s.contributor IN (SELECT followed FROM follows WHERE follower=?) "
+        "ORDER BY s.created_at DESC, s.id DESC LIMIT ?",
+        (viewer, limit),
+    ).fetchall()
+    return [{k: r[k] for k in r.keys()} for r in rows]
 
 
 def upsert_profile(

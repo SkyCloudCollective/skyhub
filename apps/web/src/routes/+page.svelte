@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
-	import { getFacets, search, type Facets, type SearchParams, type SearchResult } from '$lib/api';
+	import { getFacets, getFeed, search, type Facets, type Sample, type SearchParams, type SearchResult } from '$lib/api';
 	import { loadCommunity } from '$lib/collections';
 	import SampleCard from '$lib/components/SampleCard.svelte';
 	import FacetSidebar from '$lib/components/FacetSidebar.svelte';
@@ -11,6 +11,7 @@
 	let filters = $state<SearchParams>({});
 	let facets = $state<Facets | null>(null);
 	let result = $state<SearchResult | null>(null);
+	let feed = $state<Sample[]>([]);
 	let loading = $state(true);
 	let offline = $state(false);
 
@@ -18,6 +19,7 @@
 		try {
 			facets = await getFacets();
 			await loadCommunity();
+			feed = await getFeed().catch(() => []);
 		} catch {
 			offline = true;
 		}
@@ -62,6 +64,17 @@
 	<p class="status off glass">● {$t('home.status.offline')}</p>
 {/if}
 
+{#if feed.length}
+	<section class="feed glass">
+		<h2>From people you follow</h2>
+		<div class="feed-grid">
+			{#each feed.slice(0, 6) as s (s.id)}
+				<SampleCard sample={s} />
+			{/each}
+		</div>
+	</section>
+{/if}
+
 <div class="layout">
 	<div class="rail">
 		<FacetSidebar {facets} bind:filters />
@@ -100,6 +113,23 @@
 		color: var(--c-warn);
 		padding: var(--space-3) var(--space-4);
 		margin-bottom: var(--space-4);
+	}
+	.feed {
+		padding: var(--space-4);
+		margin-bottom: var(--space-4);
+		border-radius: var(--radius-md);
+	}
+	.feed h2 {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-sm);
+		text-transform: uppercase;
+		letter-spacing: var(--tracking-display);
+		color: var(--fg-dim);
+	}
+	.feed-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: var(--space-3);
 	}
 	.layout {
 		display: grid;

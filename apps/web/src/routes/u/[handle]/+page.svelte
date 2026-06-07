@@ -5,6 +5,7 @@
 		getProfile,
 		getMe,
 		patchProfile,
+		followUser,
 		listCollections,
 		search,
 		type Profile,
@@ -41,6 +42,12 @@
 		if (p) profile = { ...profile!, ...p };
 		editing = false;
 	}
+
+	async function toggleFollow() {
+		if (!profile) return;
+		const res = await followUser(profile.handle, !profile.you_follow);
+		if (res) profile = { ...profile, ...res };
+	}
 </script>
 
 {#if profile}
@@ -48,11 +55,18 @@
 		<div class="avatar" aria-hidden="true">{(profile.display_name ?? profile.handle).slice(0, 1).toUpperCase()}</div>
 		<div class="meta">
 			<h1>{profile.display_name ?? profile.handle}</h1>
-			<p class="muted">@{profile.handle} · {profile.sample_count} sample{profile.sample_count === 1 ? '' : 's'}</p>
+			<p class="muted">
+				@{profile.handle} · {profile.sample_count} sample{profile.sample_count === 1 ? '' : 's'}
+				· {profile.followers} follower{profile.followers === 1 ? '' : 's'} · {profile.following} following
+			</p>
 			{#if profile.bio}<p class="bio">{profile.bio}</p>{/if}
 		</div>
 		{#if isMe}
 			<button class="ghost" onclick={() => (editing = !editing)}>Edit</button>
+		{:else}
+			<button class:accent-fill={!profile.you_follow} class:ghost={profile.you_follow} onclick={toggleFollow}>
+				{profile.you_follow ? 'Following' : 'Follow'}
+			</button>
 		{/if}
 	</header>
 

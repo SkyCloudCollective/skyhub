@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import __version__, auth, board, catalog, community, projects
+from . import __version__, auth, board, catalog, community, projects, social
 from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -598,3 +598,78 @@ def submit_feedback(
     me: str = Depends(acting),
 ):
     return _forbidden_to_http(lambda: board.submit_feedback(conn, me, body.message, body.context))
+
+
+# ── social: comments + reactions on samples ──────────────────────────────────
+class CommentCreate(BaseModel):
+    body: str
+    parent_id: Optional[int] = None
+
+
+class ReactionToggle(BaseModel):
+    emoji: str
+
+
+@app.get("/v1/sample/{sample_id}/comments")
+def sample_comments(sample_id: int, conn: sqlite3.Connection = Depends(db)):
+    return social.list_comments(conn, sample_id)
+
+
+@app.post("/v1/sample/{sample_id}/comments", status_code=201)
+def add_sample_comment(
+    sample_id: int,
+    body: CommentCreate,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    res = _forbidden_to_http(
+        lambda: social.add_comment(conn, sample_id, me, body.body, parent_id=body.parent_id)
+    )
+    if res is None:
+        raise HTTPException(status_code=404, detail="sample not found")
+    return res
+
+
+@app.delete("/v1/sample/{sample_id}/comments/{comment_id}", status_code=204)
+def delete_sample_comment(
+    sample_id: int,
+    comment_id: int,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    res = _forbidden_to_http(lambda: social.delete_comment(conn, comment_id, me))
+    if res is None:
+        raise HTTPException(status_code=404, detail="comment not found")
+
+
+@app.get("/v1/sample/{sample_id}/reactions")
+def sample_reactions(
+    sample_id: int, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)
+):
+    return social.reactions(conn, sample_id, me)
+
+
+@app.post("/v1/sample/{sample_id}/reactions")
+def add_sample_reaction(
+    sample_id: int,
+    body: ReactionToggle,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    res = _forbidden_to_http(lambda: social.toggle_reaction(conn, sample_id, me, body.emoji, True))
+    if res is None:
+        raise HTTPException(status_code=404, detail="sample not found")
+    return res
+
+
+@app.delete("/v1/sample/{sample_id}/reactions")
+def remove_sample_reaction(
+    sample_id: int,
+    body: ReactionToggle,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    res = _forbidden_to_http(lambda: social.toggle_reaction(conn, sample_id, me, body.emoji, False))
+    if res is None:
+        raise HTTPException(status_code=404, detail="sample not found")
+    return res

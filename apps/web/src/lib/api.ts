@@ -296,3 +296,28 @@ export const voteFeature = (id: number, on: boolean) =>
 	send<VoteResult>(`/v1/feature-requests/${id}/vote`, on ? 'POST' : 'DELETE');
 export const sendFeedback = (message: string, context?: string) =>
 	send<{ id: number; ok: boolean }>('/v1/feedback', 'POST', { message, context });
+
+// ── social: comments + reactions on samples ─────────────────────────────────
+export interface Comment {
+	id: number;
+	sample_id: number;
+	parent_id: number | null;
+	handle: string;
+	body: string;
+	edited_at: string | null;
+	created_at: string;
+}
+export interface Reactions {
+	counts: Record<string, number>;
+	mine: string[];
+}
+
+export const getSample = (id: number) => api<Sample>(`/v1/sample/${id}`);
+export const sampleComments = (id: number) => api<Comment[]>(`/v1/sample/${id}/comments`);
+export const addSampleComment = (id: number, body: string, parent_id?: number) =>
+	send<Comment>(`/v1/sample/${id}/comments`, 'POST', { body, parent_id });
+export const deleteSampleComment = (id: number, commentId: number) =>
+	send<null>(`/v1/sample/${id}/comments/${commentId}`, 'DELETE');
+export const sampleReactions = (id: number) => api<Reactions>(`/v1/sample/${id}/reactions`);
+export const toggleReaction = (id: number, emoji: string, on: boolean) =>
+	send<Reactions>(`/v1/sample/${id}/reactions`, on ? 'POST' : 'DELETE', { emoji });

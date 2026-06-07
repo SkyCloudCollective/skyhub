@@ -44,7 +44,7 @@
 
 	<div class="body">
 		<div class="row1">
-			<span class="title">{sample.title}</span>
+			<a class="title" href={`/s/${sample.id}`} draggable="false" title="Open — comments & reactions">{sample.title}</a>
 			{#if sample.contributor}<a class="by muted" href={`/u/${sample.contributor}`} draggable="false">@{sample.contributor}</a>{/if}
 		</div>
 
@@ -137,6 +137,11 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		color: var(--fg);
+		text-decoration: none;
+	}
+	.title:hover {
+		color: var(--accent);
 	}
 	.by {
 		font-size: var(--text-xs);

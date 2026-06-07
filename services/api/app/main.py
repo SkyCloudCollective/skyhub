@@ -706,6 +706,11 @@ def my_following(conn: sqlite3.Connection = Depends(db), me: str = Depends(actin
     return community.following_of(conn, me)
 
 
+@app.get("/v1/members")
+def members(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return community.members(conn, me)
+
+
 @app.get("/v1/feed")
 def my_feed(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
     return community.feed(conn, me)

@@ -362,9 +362,20 @@ export interface Inbox {
 	unread: number;
 }
 
+export interface Member {
+	handle: string;
+	display_name: string | null;
+	bio: string | null;
+	sample_count: number;
+	followers: number;
+	you_follow: boolean;
+	is_me: boolean;
+}
+
 export const followUser = (handle: string, on: boolean) =>
 	send<FollowStatus>(`/v1/follow/${encodeURIComponent(handle)}`, on ? 'POST' : 'DELETE');
 export const getFollowing = () => api<string[]>('/v1/me/following');
+export const getMembers = () => api<Member[]>('/v1/members');
 export const getFeed = () => api<Sample[]>('/v1/feed');
 export const getNotifications = () => api<Inbox>('/v1/notifications');
 export const readNotifications = () => send<{ unread: number }>('/v1/notifications/read', 'POST');

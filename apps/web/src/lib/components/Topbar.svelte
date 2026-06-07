@@ -9,6 +9,7 @@
 		{ href: '/studio', key: 'nav.studio' },
 		{ href: '/galaxy', key: 'nav.galaxy' },
 		{ href: '/projects', key: 'nav.projects' },
+		{ href: '/members', key: 'nav.members' },
 		{ href: '/board', key: 'nav.board' },
 		{ href: '/download', key: 'nav.downloads' }
 	];

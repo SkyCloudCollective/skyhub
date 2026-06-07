@@ -5,6 +5,7 @@ export const en = {
 	'nav.studio': 'Studio',
 	'nav.galaxy': 'Galaxy',
 	'nav.projects': 'Projects',
+	'nav.members': 'Members',
 	'nav.board': 'Board',
 	'nav.downloads': 'Get the app',
 	'theme.toggle': 'Theme',

@@ -40,6 +40,20 @@ def test_notifications_inbox_starts_empty(client):
     assert n["unread"] == 0 and n["items"] == []
 
 
+def test_members_directory(client):
+    by = {m["handle"]: m for m in client.get("/v1/members").json()}
+    assert "tev" in by and by["tev"]["sample_count"] == 1
+    assert "ama" in by
+    assert by["tev"]["you_follow"] is False
+    client.post("/v1/follow/tev")
+    by = {m["handle"]: m for m in client.get("/v1/members").json()}
+    assert by["tev"]["you_follow"] is True
+    # a member with a profile but no samples still appears
+    client.patch("/v1/me/profile", json={"display_name": "Me!"})
+    by = {m["handle"]: m for m in client.get("/v1/members").json()}
+    assert "me" in by and by["me"]["is_me"] is True
+
+
 # ── notification generation (direct module: needs a second actor) ────────────-
 def test_comment_notifies_contributor_not_self(wconn):
     sid = _tev_sample(wconn)

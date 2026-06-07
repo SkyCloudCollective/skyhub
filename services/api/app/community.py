@@ -87,6 +87,46 @@ def following_of(conn: sqlite3.Connection, handle: str) -> list[str]:
     ]
 
 
+def members(conn: sqlite3.Connection, viewer: str | None = None) -> list[dict]:
+    """The member directory: everyone who has contributed a sample or has a
+    profile, with sample + follower counts (public data). Sorted by contribution."""
+    handles: set[str] = set()
+    for r in conn.execute(
+        "SELECT DISTINCT contributor FROM samples WHERE contributor IS NOT NULL AND contributor <> ''"
+    ):
+        handles.add(r[0])
+    for r in conn.execute("SELECT handle FROM profiles"):
+        handles.add(r[0])
+    out = []
+    for h in handles:
+        prof = conn.execute(
+            "SELECT display_name, bio FROM profiles WHERE handle=?", (h,)
+        ).fetchone()
+        out.append(
+            {
+                "handle": h,
+                "display_name": prof["display_name"] if prof else None,
+                "bio": prof["bio"] if prof else None,
+                "sample_count": conn.execute(
+                    "SELECT COUNT(*) FROM samples WHERE contributor=?", (h,)
+                ).fetchone()[0],
+                "followers": conn.execute(
+                    "SELECT COUNT(*) FROM follows WHERE followed=?", (h,)
+                ).fetchone()[0],
+                "you_follow": bool(
+                    viewer
+                    and viewer != h
+                    and conn.execute(
+                        "SELECT 1 FROM follows WHERE follower=? AND followed=?", (viewer, h)
+                    ).fetchone()
+                ),
+                "is_me": viewer == h,
+            }
+        )
+    out.sort(key=lambda m: (-m["sample_count"], m["handle"]))
+    return out
+
+
 def feed(conn: sqlite3.Connection, viewer: str, limit: int = 30) -> list[dict]:
     """Recent samples contributed by the people `viewer` follows."""
     rows = conn.execute(

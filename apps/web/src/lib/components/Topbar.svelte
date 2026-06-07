@@ -7,6 +7,7 @@
 		{ href: '/', key: 'nav.library' },
 		{ href: '/studio', key: 'nav.studio' },
 		{ href: '/galaxy', key: 'nav.galaxy' },
+		{ href: '/projects', key: 'nav.projects' },
 		{ href: '/board', key: 'nav.board' },
 		{ href: '/download', key: 'nav.downloads' }
 	];

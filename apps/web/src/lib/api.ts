@@ -169,3 +169,94 @@ export interface Me {
 	handle: string;
 }
 export const getMe = () => api<Me>('/v1/me');
+
+// ── collaboration: projects ("a GitHub of music") ───────────────────────────
+export interface Project {
+	id: number;
+	owner: string;
+	title: string;
+	slug: string | null;
+	description: string | null;
+	kind: string | null;
+	daw: string | null;
+	visibility: string; // 'private' | 'unlisted' | 'open'
+	storage: string;
+	license: string | null;
+	updated_at: string;
+	role?: string | null;
+	members?: number;
+	files?: number;
+}
+export interface ProjectMember {
+	handle: string;
+	role: string;
+	accepted_at: string | null;
+}
+export interface ProjectFile {
+	rel_path: string;
+	kind: string | null;
+	bytes: number | null;
+	sha256: string | null;
+	version: number;
+	updated_by: string | null;
+	updated_at: string;
+}
+export interface ProjectActivity {
+	actor: string | null;
+	action: string;
+	target: string | null;
+	created_at: string;
+}
+export interface ProjectFull {
+	project: Project;
+	role: string | null;
+	members: ProjectMember[];
+	files: ProjectFile[];
+	activity: ProjectActivity[];
+}
+export interface Invite {
+	id: number;
+	project_id: number;
+	role: string;
+	invited_by: string | null;
+	title: string;
+	slug: string | null;
+}
+
+export const listProjects = () => api<Project[]>('/v1/projects');
+export const createProject = (body: { title: string; kind?: string; daw?: string; visibility?: string }) =>
+	send<Project>('/v1/projects', 'POST', body);
+export const getProject = (idOrSlug: string | number) =>
+	api<ProjectFull>(`/v1/projects/${encodeURIComponent(String(idOrSlug))}`);
+export const patchProject = (id: number, body: Partial<Pick<Project, 'title' | 'description' | 'kind' | 'daw' | 'license' | 'visibility'>>) =>
+	send<Project>(`/v1/projects/${id}`, 'PATCH', body);
+export const deleteProject = (id: number) => send<null>(`/v1/projects/${id}`, 'DELETE');
+
+export const inviteMember = (id: number, handle: string, role = 'editor') =>
+	send<{ id: number; status: string }>(`/v1/projects/${id}/invite`, 'POST', { handle, role });
+export const myInvites = () => api<Invite[]>('/v1/invites');
+export const acceptInvite = (id: number) => send(`/v1/invites/${id}/accept`, 'POST', {});
+export const declineInvite = (id: number) => send(`/v1/invites/${id}/decline`, 'POST', {});
+export const joinProject = (id: number) => send(`/v1/projects/${id}/join`, 'POST', {});
+export const removeMember = (id: number, handle: string) =>
+	send<null>(`/v1/projects/${id}/members/${encodeURIComponent(handle)}`, 'DELETE');
+
+export const projectFileUrl = (id: number, relPath: string) =>
+	`${API_BASE}/v1/projects/${id}/files/${relPath.split('/').map(encodeURIComponent).join('/')}`;
+export async function uploadProjectFile(id: number, relPath: string, file: Blob, kind?: string) {
+	const path = relPath.split('/').map(encodeURIComponent).join('/');
+	const res = await fetch(`${API_BASE}/v1/projects/${id}/files/${path}${kind ? `?kind=${kind}` : ''}`, {
+		method: 'PUT',
+		body: file
+	});
+	if (!res.ok) throw new Error(`${res.status} for upload`);
+	return res.json();
+}
+export const deleteProjectFile = (id: number, relPath: string) => {
+	const path = relPath.split('/').map(encodeURIComponent).join('/');
+	return send<null>(`/v1/projects/${id}/files/${path}`, 'DELETE');
+};
+export const projectComments = (id: number) =>
+	api<{ id: number; rel_path: string | null; handle: string; body: string; created_at: string }[]>(`/v1/projects/${id}/comments`);
+export const addProjectComment = (id: number, body: string, rel_path?: string) =>
+	send(`/v1/projects/${id}/comments`, 'POST', { body, rel_path });

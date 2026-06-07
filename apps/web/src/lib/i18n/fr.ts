@@ -6,6 +6,7 @@ export const fr: Dict = {
 	'nav.library': 'Bibliothèque',
 	'nav.studio': 'Studio',
 	'nav.galaxy': 'Galaxie',
+	'nav.projects': 'Projets',
 	'nav.board': 'Idées',
 	'nav.downloads': "L'appli",
 	'theme.toggle': 'Thème',

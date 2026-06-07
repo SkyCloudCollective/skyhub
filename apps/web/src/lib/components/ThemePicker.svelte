@@ -147,7 +147,11 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 38px;
+		height: 38px;
 		min-width: 38px;
+		padding: 0;
+		border-radius: 50%;
 	}
 	.dot {
 		width: 16px;
@@ -168,6 +172,8 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+		transform-origin: top right;
+		animation: rs-pop var(--dur-fast) var(--ease-out);
 	}
 	.row {
 		display: flex;

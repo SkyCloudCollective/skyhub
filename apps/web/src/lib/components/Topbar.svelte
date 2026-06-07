@@ -44,7 +44,7 @@
 		<a class="ghost acct" href="/u/me" title="Profile" aria-label="Profile">me</a>
 		<ThemePicker />
 		<button
-			class="ghost"
+			class="ghost lang"
 			onclick={() => setLocale(nextLang($locale))}
 			title={$t('lang.toggle')}
 			aria-label={$t('lang.toggle')}
@@ -132,11 +132,25 @@
 	.actions {
 		display: flex;
 		gap: var(--space-2);
+		align-items: center;
 	}
 	.ghost {
 		background: var(--surface);
 		min-width: 38px;
 		text-align: center;
+	}
+	/* Language toggle: same 38px circle as the other action controls, centred. */
+	.lang {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 38px;
+		height: 38px;
+		min-width: 38px;
+		padding: 0;
+		border-radius: 50%;
+		font-size: var(--text-sm);
+		font-weight: 600;
 	}
 	/* The profile is an <a>, so it doesn't inherit the gel <button> skin — give it
 	   its own: a circular gel bubble (avatar-ready), matching the action buttons. */

@@ -86,7 +86,14 @@
 	}
 	.bell {
 		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 38px;
+		height: 38px;
 		min-width: 38px;
+		padding: 0;
+		border-radius: 50%;
 	}
 	.badge {
 		position: absolute;

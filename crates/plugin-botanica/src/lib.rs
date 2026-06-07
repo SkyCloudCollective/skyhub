@@ -1,10 +1,11 @@
 //! Botanica — CLAP/VST3 generative instrument.
 //!
 //! A thin `nih-plug` wrapper around the `botanica` crate (the same DSP the web
-//! studio runs through wasm). Botanica is generative: it drones from a built-in
-//! tone (or a loaded sample) and is steered by the XY character puck + macros, so
-//! the plugin is an always-on generator with host-automatable parameters — no
-//! MIDI input. Sound design by **Tev**; original implementation.
+//! studio runs through wasm). Botanica drones from a built-in tone (or a loaded
+//! sample) steered by the XY character puck + macros, and (A1) is playable:
+//! incoming MIDI notes pitch the loop and set the root the generative layers
+//! lock to (mono, last-note priority). With no note held it falls back to the
+//! drone. Sound design by **Tev**; original implementation.
 
 use botanica::{BotanicaParams, Engine};
 use nih_plug::prelude::*;
@@ -119,7 +120,7 @@ impl Plugin for BotanicaPlugin {
         ..AudioIOLayout::const_default()
     }];
 
-    const MIDI_INPUT: MidiConfig = MidiConfig::None;
+    const MIDI_INPUT: MidiConfig = MidiConfig::Basic;
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
 
     type SysExMessage = ();
@@ -144,11 +145,29 @@ impl Plugin for BotanicaPlugin {
         &mut self,
         buffer: &mut Buffer,
         _aux: &mut AuxiliaryBuffers,
-        _context: &mut impl ProcessContext<Self>,
+        context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         self.engine.set_params(self.engine_params());
         let gain = util::db_to_gain(self.params.gain.value());
-        for channel_samples in buffer.iter_samples() {
+
+        let mut next_event = context.next_event();
+        for (sample_id, channel_samples) in buffer.iter_samples().enumerate() {
+            // sample-accurate MIDI → mono last-note pitch + key (A1)
+            while let Some(event) = next_event {
+                if event.timing() > sample_id as u32 {
+                    break;
+                }
+                match event {
+                    NoteEvent::NoteOn { note, velocity, .. } => {
+                        self.engine.note_on(note as f32, velocity)
+                    }
+                    NoteEvent::NoteOff { note, .. } => self.engine.note_off(note as f32),
+                    NoteEvent::Choke { note, .. } => self.engine.note_off(note as f32),
+                    _ => {}
+                }
+                next_event = context.next_event();
+            }
+
             let s = self.engine.next() * gain;
             for sample in channel_samples {
                 *sample = s;

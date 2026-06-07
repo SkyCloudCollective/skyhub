@@ -129,6 +129,48 @@ pub unsafe extern "C" fn botanica_set_param(p: *mut BotanicaHandle, id: u32, val
     h.engine.set_params(h.params);
 }
 
+/// Play a note (A1): mono last-note priority steers Botanica's pitch + key.
+///
+/// # Safety
+/// `p` must be a live pointer from [`botanica_new`].
+#[no_mangle]
+pub unsafe extern "C" fn botanica_note_on(p: *mut BotanicaHandle, note: f32, vel: f32) {
+    if let Some(h) = p.as_mut() {
+        h.engine.note_on(note, vel);
+    }
+}
+
+/// Release a note (falls back to the previous held note, then to the drone).
+///
+/// # Safety
+/// `p` must be a live pointer from [`botanica_new`].
+#[no_mangle]
+pub unsafe extern "C" fn botanica_note_off(p: *mut BotanicaHandle, note: f32) {
+    if let Some(h) = p.as_mut() {
+        h.engine.note_off(note);
+    }
+}
+
+/// Release every held note.
+///
+/// # Safety
+/// `p` must be a live pointer from [`botanica_new`].
+#[no_mangle]
+pub unsafe extern "C" fn botanica_all_notes_off(p: *mut BotanicaHandle) {
+    if let Some(h) = p.as_mut() {
+        h.engine.all_notes_off();
+    }
+}
+
+/// Number of currently-held notes (for the UI voice readout).
+///
+/// # Safety
+/// `p` must be a live pointer from [`botanica_new`].
+#[no_mangle]
+pub unsafe extern "C" fn botanica_held_notes(p: *mut BotanicaHandle) -> u32 {
+    p.as_ref().map_or(0, |h| h.engine.held_notes() as u32)
+}
+
 /// Load a mono sample (copied from wasm memory) into Botanica's loop voice.
 ///
 /// # Safety
@@ -440,6 +482,33 @@ mod tests {
                 energy += rms(s);
             }
             assert!(energy > 0.0, "botanica abi silent");
+            botanica_free(h);
+            rs_free(out, n);
+        }
+    }
+
+    #[test]
+    fn botanica_note_abi_is_playable() {
+        let n = 256;
+        let out = rs_alloc(n);
+        unsafe {
+            let h = botanica_new(48_000.0);
+            assert_eq!(botanica_held_notes(h), 0);
+            botanica_note_on(h, 60.0, 0.9);
+            botanica_note_on(h, 67.0, 0.9);
+            assert_eq!(botanica_held_notes(h), 2);
+            let mut peak = 0.0f32;
+            for _ in 0..16 {
+                botanica_process(h, out, n);
+                let s = core::slice::from_raw_parts(out, n);
+                assert!(s.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
+                peak = peak.max(s.iter().fold(0.0, |a, &v| a.max(v.abs())));
+            }
+            assert!(peak > 0.0, "playable botanica produced silence");
+            botanica_note_off(h, 67.0);
+            assert_eq!(botanica_held_notes(h), 1);
+            botanica_all_notes_off(h);
+            assert_eq!(botanica_held_notes(h), 0);
             botanica_free(h);
             rs_free(out, n);
         }

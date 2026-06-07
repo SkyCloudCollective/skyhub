@@ -85,6 +85,68 @@ impl Default for BotanicaParams {
     }
 }
 
+/// MIDI note the sample loop plays at its natural (retune-only) pitch. Playing
+/// this note = unison with the drone; other notes transpose around it. C3.
+const ROOT_REFERENCE_MIDI: f32 = 48.0;
+
+/// 12-bit allowed-semitone mask the spark arp quantises to, relative to the
+/// played root: a major scale (root, 2, 4, 5, 7, 9, 11). Bit i = semitone i.
+const MAJOR_KEY_MASK: u16 = 0b1010_1101_0101;
+
+/// Last-note-priority held-note stack. Botanica is a single morphing texture,
+/// not a polyphonic sampler, so playing it is *mono*: the most-recently pressed
+/// (and still-held) note steers the whole instrument's pitch + key. A fixed
+/// array (never allocates) tracks the held order; releasing the top note falls
+/// back to the previous one, like a classic mono synth.
+#[derive(Clone, Copy)]
+struct NoteStack {
+    notes: [u8; Self::CAP],
+    len: usize,
+}
+
+impl NoteStack {
+    const CAP: usize = 16;
+
+    fn new() -> Self {
+        Self {
+            notes: [0; Self::CAP],
+            len: 0,
+        }
+    }
+
+    fn push(&mut self, note: u8) {
+        // de-dup, then append (most recent last). Drop the oldest if full.
+        self.remove(note);
+        if self.len == Self::CAP {
+            self.notes.copy_within(1..Self::CAP, 0);
+            self.len -= 1;
+        }
+        self.notes[self.len] = note;
+        self.len += 1;
+    }
+
+    fn remove(&mut self, note: u8) {
+        if let Some(i) = self.notes[..self.len].iter().position(|&n| n == note) {
+            for j in i..self.len - 1 {
+                self.notes[j] = self.notes[j + 1];
+            }
+            self.len -= 1;
+        }
+    }
+
+    fn clear(&mut self) {
+        self.len = 0;
+    }
+
+    fn top(&self) -> Option<u8> {
+        if self.len == 0 {
+            None
+        } else {
+            Some(self.notes[self.len - 1])
+        }
+    }
+}
+
 /// One loaded sample, looped with linear interpolation + pitch ratio.
 #[derive(Clone, Debug, Default)]
 struct SampleVoice {
@@ -142,6 +204,11 @@ pub struct Engine {
     drive_amt: Smoothed,
     gain: Smoothed,
     spark_gain: Smoothed, // declick gate for the spark/pluck layer (A2)
+    // ── playability (A1): the keyboard steers pitch + key, Cube-style ──
+    held: NoteStack,        // mono last-note priority
+    note_semis_s: Smoothed, // smoothed played-note transpose (no pitch zipper)
+    root_midi: f32,         // last-played root the generative layers key to
+    note_vel: f32,          // velocity of the active note (drives intensity bias)
     params: BotanicaParams,
 }
 
@@ -173,6 +240,11 @@ impl Engine {
             // ~12 ms gate: fast enough to feel responsive when toggling, slow
             // enough that the layer fades in/out instead of clicking.
             spark_gain: Smoothed::new(if p.spark_on >= 0.5 { 1.0 } else { 0.0 }, 0.012, sr),
+            held: NoteStack::new(),
+            // ~18 ms pitch glide: legato/last-note transitions are smooth, not zippered
+            note_semis_s: Smoothed::new(0.0, 0.018, sr),
+            root_midi: ROOT_REFERENCE_MIDI,
+            note_vel: 0.0,
             params: p,
         };
         e.delay.set(0.24, 0.25, 0.18, 0.3);
@@ -190,6 +262,71 @@ impl Engine {
 
     pub fn clear_sample(&mut self) {
         self.voice = SampleVoice::default();
+    }
+
+    /// Play a note (A1). Mono, last-note priority: the most recent held note
+    /// transposes the sample loop and becomes the root the generative layers
+    /// (arp, strings, resonance) lock to — Cube-style, the note you play decides
+    /// the key. RT-safe: no alloc, just a fixed-array push + smoother retarget.
+    pub fn note_on(&mut self, midi: f32, vel: f32) {
+        let m = midi.clamp(0.0, 127.0);
+        self.held.push(m as u8);
+        self.note_vel = vel.clamp(0.0, 1.0);
+        self.update_pitch_target();
+    }
+
+    /// Release a note. If notes remain, fall back to the previous one (legato);
+    /// if none remain, the loop glides back to the retune drone but the last
+    /// root is kept so the generative layers stay musically coherent.
+    pub fn note_off(&mut self, midi: f32) {
+        let m = midi.clamp(0.0, 127.0) as u8;
+        self.held.remove(m);
+        self.update_pitch_target();
+    }
+
+    /// Release every note (panic button / instrument switch).
+    pub fn all_notes_off(&mut self) {
+        self.held.clear();
+        self.update_pitch_target();
+    }
+
+    /// Number of currently-held notes (for UI display).
+    pub fn held_notes(&self) -> usize {
+        self.held.len
+    }
+
+    /// Re-point the pitch glide + generative root from the held-note stack.
+    /// When a note is held it sets both; when none is held the transpose glides
+    /// back to 0 (the retune drone) while the root memory is preserved.
+    fn update_pitch_target(&mut self) {
+        match self.held.top() {
+            Some(note) => {
+                let n = note as f32;
+                self.root_midi = n;
+                self.note_semis_s.set_target(n - ROOT_REFERENCE_MIDI);
+            }
+            None => {
+                // graceful drone: return the loop to its retune pitch; keep the
+                // last root so arp/strings/resonance don't lurch off-key.
+                self.note_semis_s.set_target(0.0);
+            }
+        }
+        // resonance bank re-tracks the (possibly new) root immediately.
+        self.update_resonance_pitch();
+    }
+
+    /// Resonance fundamental follows the played root + retune (A1).
+    fn update_resonance_pitch(&mut self) {
+        let semis = self.root_offset_semis() + self.params.retune_semis;
+        let ratio = (2.0_f32).powf(semis / 12.0).clamp(0.25, 4.0);
+        self.res.set_pitch(110.0 * ratio);
+    }
+
+    /// Semitone offset of the active root relative to the reference (0 when no
+    /// note has ever been played).
+    #[inline]
+    fn root_offset_semis(&self) -> f32 {
+        self.root_midi - ROOT_REFERENCE_MIDI
     }
 
     pub fn set_params(&mut self, p: BotanicaParams) {
@@ -219,21 +356,29 @@ impl Engine {
         self.motion_s.set_target(p.motion.clamp(0.0, 1.0));
         self.drive_amt
             .set_target(1.0 + p.blend.clamp(0.0, 1.0) * 5.0);
-        // resonance bank tracks the voice pitch
-        let ratio = (2.0_f32).powf(p.retune_semis / 12.0).clamp(0.35, 2.5);
-        self.res.set_pitch(110.0 * ratio);
+        // resonance bank tracks the played root + retune (A1)
+        self.update_resonance_pitch();
         // spark layer: declick gate target + free-running pluck rate (A2)
         self.spark_gain
             .set_target(if p.spark_on >= 0.5 { 1.0 } else { 0.0 });
         let rate = p.spark_rate.clamp(0.1, 8.0);
         self.arp.set_clock(false, rate, 120.0, 2.0);
+        // generative layers lock to the played root (A1): the spark arp arps a
+        // major-ish scale around the root; the string bed is built on the same
+        // key. This is the "always in key" feel of v1, anchored on the note the
+        // player holds — not a hidden algorithm.
+        self.arp.set_key(self.root_midi, MAJOR_KEY_MASK);
     }
 
+    /// Sample-loop playback ratio for a given live note transpose (semitones).
+    /// Folds the retune knob + the played-note transpose, clamped to the loop's
+    /// safe range. Kept a touch wider than the original 0.35..2.5 so a 2-octave
+    /// keyboard span doesn't pin at the edges.
     #[inline]
-    fn pitch_ratio(&self) -> f32 {
+    fn pitch_ratio(&self, note_semis: f32) -> f32 {
         (2.0_f32)
-            .powf(self.params.retune_semis / 12.0)
-            .clamp(0.35, 2.5)
+            .powf((self.params.retune_semis + note_semis) / 12.0)
+            .clamp(0.25, 4.0)
     }
 
     /// Produce one mono sample.
@@ -251,11 +396,18 @@ impl Engine {
         let bl = blend(x, y);
         let eff = eff_macros(x, y, ik, bk, mk, self.params.xy_macro_mix);
 
-        // voice → character filter
+        // played-note transpose (A1), smoothed so legato glides without zipper.
+        let note_semis = self.note_semis_s.next();
+        let ratio = self.pitch_ratio(note_semis);
+
+        // voice → character filter. The loop transposes with the note; the
+        // built-in fallback tone is likewise playable (110 Hz at the reference
+        // note), so Botanica responds to the keyboard with or without a sample.
         let dry = if self.voice.loaded() {
-            self.voice.next(self.sample_rate, hold, self.pitch_ratio())
+            self.voice.next(self.sample_rate, hold, ratio)
         } else {
-            0.4 * self.fallback.next(110.0, Waveform::Triangle)
+            let f = (110.0 * ratio).clamp(20.0, self.sample_rate * 0.45);
+            0.4 * self.fallback.next(f, Waveform::Triangle)
         };
         let shaped = self.char_filter.process(
             dry,
@@ -299,7 +451,7 @@ impl Engine {
                 self.params.freeze_size,
                 0.5,
                 self.params.freeze_spray,
-                self.pitch_ratio(),
+                ratio,
                 0.3,
             );
             self.freeze_mod.process()
@@ -316,7 +468,10 @@ impl Engine {
                     airiness: (self.params.strings_air * (0.6 + bl.strings.airy.max(0.0) * 3.0))
                         .clamp(0.0, 1.0),
                     body_tone: self.params.strings_tone,
-                    key: self.params.retune_semis.rem_euclid(12.0),
+                    // bed root follows the played note (A1): the chord is built
+                    // on the held key, clamped into the bed's natural register.
+                    octave_base: self.root_midi.clamp(24.0, 60.0),
+                    key: 0.0,
                     ..StringParams::default()
                 },
                 eff.intensity,
@@ -552,6 +707,100 @@ mod tests {
         let on = render(1.0);
         let off = render(0.0);
         assert!(off < on, "spark off was not quieter: on {on} off {off}");
+    }
+
+    #[test]
+    fn note_on_transposes_the_loop() {
+        // A1: playing a note above the reference must speed the loop up.
+        let sample: Vec<f32> = (0..1000).map(|i| i as f32 / 1000.0).collect();
+        let advance = |midi: f32| {
+            let mut e = Engine::new(48_000.0);
+            e.set_sample(sample.clone(), 48_000.0);
+            e.note_on(midi, 0.9);
+            // let the pitch glide settle, then measure travel over a fixed span
+            for _ in 0..2000 {
+                e.next();
+            }
+            let p0 = e.voice.pos;
+            for _ in 0..400 {
+                e.next();
+            }
+            (e.voice.pos - p0 + 1000.0) % 1000.0
+        };
+        let low = advance(ROOT_REFERENCE_MIDI); // unison
+        let high = advance(ROOT_REFERENCE_MIDI + 12.0); // +1 octave ≈ 2×
+        assert!(
+            high > low * 1.5,
+            "note did not transpose the loop: low {low} high {high}"
+        );
+    }
+
+    #[test]
+    fn mono_last_note_priority() {
+        // Holding two notes tracks the most recent; releasing it falls back to
+        // the earlier one (classic mono synth), and the root follows.
+        let mut e = Engine::new(48_000.0);
+        e.note_on(48.0, 1.0);
+        assert_eq!(e.root_midi, 48.0);
+        e.note_on(55.0, 1.0);
+        assert_eq!(e.root_midi, 55.0);
+        assert_eq!(e.held_notes(), 2);
+        e.note_off(55.0);
+        assert_eq!(e.root_midi, 48.0, "did not fall back to the held note");
+        assert_eq!(e.held_notes(), 1);
+    }
+
+    #[test]
+    fn all_notes_off_returns_to_drone_but_keeps_root() {
+        // Releasing everything glides the loop transpose back to 0 (the retune
+        // drone) but keeps the last root so the layers stay in key.
+        let mut e = Engine::new(48_000.0);
+        e.note_on(60.0, 1.0);
+        for _ in 0..1000 {
+            e.next();
+        }
+        e.all_notes_off();
+        assert_eq!(e.held_notes(), 0);
+        assert_eq!(e.root_midi, 60.0, "root memory was lost");
+        for _ in 0..6000 {
+            e.next();
+        }
+        // transpose has glided back toward unison
+        assert!(
+            e.note_semis_s.value().abs() < 0.5,
+            "did not return to the drone pitch: {}",
+            e.note_semis_s.value()
+        );
+    }
+
+    #[test]
+    fn playing_stays_finite_and_bounded() {
+        let mut e = Engine::new(48_000.0);
+        let sample: Vec<f32> = (0..4800)
+            .map(|i| (core::f32::consts::TAU * 220.0 * i as f32 / 48_000.0).sin())
+            .collect();
+        e.set_sample(sample, 48_000.0);
+        for n in [36.0, 48.0, 60.0, 67.0, 72.0] {
+            e.note_on(n, 0.9);
+            let mut buf = vec![0.0; 9600];
+            e.process(&mut buf);
+            assert!(buf.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
+            e.note_off(n);
+        }
+    }
+
+    #[test]
+    fn note_stack_dedups_and_caps() {
+        let mut s = NoteStack::new();
+        s.push(60);
+        s.push(60); // de-dup
+        assert_eq!(s.len, 1);
+        for n in 0..(NoteStack::CAP as u8 + 4) {
+            s.push(100 + n);
+        }
+        assert_eq!(s.len, NoteStack::CAP, "stack overflowed its fixed cap");
+        // top is the most recent push
+        assert_eq!(s.top(), Some(100 + NoteStack::CAP as u8 + 3));
     }
 
     #[test]

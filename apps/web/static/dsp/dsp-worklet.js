@@ -55,16 +55,20 @@ class DspProcessor extends AudioWorkletProcessor {
 				else this.x.botanica_set_param(this.handle, m.id, m.value);
 				break;
 			case 'noteOn':
-				if (this.ready && this.instrument === 'phaseplan')
+				if (!this.ready) break;
+				if (this.instrument === 'phaseplan')
 					this.x.phaseplan_note_on(this.handle, m.note, m.vel ?? 1);
+				else this.x.botanica_note_on(this.handle, m.note, m.vel ?? 1);
 				break;
 			case 'noteOff':
-				if (this.ready && this.instrument === 'phaseplan')
-					this.x.phaseplan_note_off(this.handle, m.note);
+				if (!this.ready) break;
+				if (this.instrument === 'phaseplan') this.x.phaseplan_note_off(this.handle, m.note);
+				else this.x.botanica_note_off(this.handle, m.note);
 				break;
 			case 'allOff':
-				if (this.ready && this.instrument === 'phaseplan')
-					this.x.phaseplan_all_notes_off(this.handle);
+				if (!this.ready) break;
+				if (this.instrument === 'phaseplan') this.x.phaseplan_all_notes_off(this.handle);
+				else this.x.botanica_all_notes_off(this.handle);
 				break;
 			case 'routes':
 				if (this.ready && this.instrument === 'phaseplan') {
@@ -100,11 +104,15 @@ class DspProcessor extends AudioWorkletProcessor {
 		const buf = new Float32Array(this.x.memory.buffer, this.outPtr, n);
 		for (let c = 0; c < out.length; c++) out[c].set(buf);
 
-		// Report active voices ~20×/s so the UI can show polyphony.
+		// Report active voices / held notes ~20×/s so the UI can show activity.
 		this.frames += n;
-		if (this.instrument === 'phaseplan' && this.frames >= 2400) {
+		if (this.frames >= 2400) {
 			this.frames = 0;
-			this.port.postMessage({ type: 'voices', n: this.x.phaseplan_active_voices(this.handle) });
+			const v =
+				this.instrument === 'phaseplan'
+					? this.x.phaseplan_active_voices(this.handle)
+					: this.x.botanica_held_notes(this.handle);
+			this.port.postMessage({ type: 'voices', n: v });
 		}
 		return true;
 	}

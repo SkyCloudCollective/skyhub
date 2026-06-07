@@ -151,8 +151,10 @@
 			{/if}
 		</p>
 		<div class="status">
-			{#if instrument === 'phaseplan' && started}
-				<span class="voices" title="active voices">{voices}/8</span>
+			{#if started}
+				<span class="voices" title={instrument === 'phaseplan' ? 'active voices' : 'held notes'}>
+					{instrument === 'phaseplan' ? `${voices}/8` : `${voices} held`}
+				</span>
 			{/if}
 			<button class="power" class:on={started} onclick={power} aria-pressed={started}>
 				<Icon name="power" /> {started ? 'live' : 'power'}
@@ -238,16 +240,16 @@
 		{/if}
 	</div>
 
-	{#if instrument === 'phaseplan'}
-		<section class="keyboard glass">
-			<Keyboard noteon={noteOn} noteoff={noteOff} />
-		</section>
-	{:else}
+	{#if instrument === 'botanica'}
 		<p class="play-bot muted">
-			Botanica drones from a built-in tone (or a loaded sample). Use the Character XY pad and the knobs
-			above — sound starts on power.
+			Play the keys to pitch Botanica — the note you hold sets the root the layers lock to (Spark, string
+			bed, resonance). Release everything and it drifts back to a drone. Shape it with the Character XY pad
+			and the knobs above.
 		</p>
 	{/if}
+	<section class="keyboard glass">
+		<Keyboard noteon={noteOn} noteoff={noteOff} />
+	</section>
 </div>
 
 <style>

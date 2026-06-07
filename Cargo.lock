@@ -12,3 +12,10 @@ dependencies = [
 [[package]]
 name = "dsp-core"
 version = "0.1.0"
+
+[[package]]
+name = "phaseplan"
+version = "0.1.0"
+dependencies = [
+ "dsp-core",
+]

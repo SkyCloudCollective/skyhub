@@ -1,0 +1,47 @@
+RanchSamples
+Copyright (C) 2026  the SKY collective
+
+This product is licensed under the GNU Affero General Public License v3.0.
+See the LICENSE file for the full text.
+
+================================================================================
+Credits & third-party attributions
+================================================================================
+
+The instruments and UI are original work. They are *inspired by* well-known
+tools but contain no third-party code or assets, except where attributed below.
+
+Sound design — Botanica
+  The Botanica factory sound design is by Tev. Thank you.
+
+Meters & audio visualisation
+  The meter / scope work draws on the open-source visualisers by polarity
+  (Robert Agthe), reused under the MIT License:
+    - app.vectorscope        — RMS/dB metering + mid/side vectorscope  (MIT)
+    - app.spectrum.analyzer  — log-scaled FFT spectrum                  (MIT)
+  Copyright (c) 2023-2024 Robert Agthe. The MIT permission notice is retained
+  in any file derived from that work, and listed here as required.
+
+  MIT License (polarity, app.vectorscope / app.spectrum.analyzer):
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+Plugin framework
+  Native VST3/CLAP plugins are built on nih-plug (ISC / permissive). The plugin
+  format SDKs (VST3, CLAP) belong to their respective owners.

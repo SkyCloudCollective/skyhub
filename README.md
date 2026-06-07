@@ -39,6 +39,10 @@ The studio — two native instruments (Botanica, PhasePlan) running in an AudioW
 
 <sub>Captured in English; every surface ships `aero-light` / `aero-dark` plus user-chosen palettes and a custom accent. More in [`docs/screenshots/`](docs/screenshots/).</sub>
 
+**Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member:
+
+![Theme customisation](docs/screenshots/theme.gif)
+
 ## Surfaces
 
 - **Web app** (`apps/web`) — SvelteKit compiled to static files (no Node runtime in prod,

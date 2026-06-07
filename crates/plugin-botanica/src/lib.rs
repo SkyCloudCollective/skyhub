@@ -43,7 +43,14 @@ impl Default for PluginParams {
             FloatParam::new(name, def, FloatRange::Linear { min: 0.0, max: 1.0 })
         };
         let bipolar = |name: &str| {
-            FloatParam::new(name, 0.0, FloatRange::Linear { min: -1.0, max: 1.0 })
+            FloatParam::new(
+                name,
+                0.0,
+                FloatRange::Linear {
+                    min: -1.0,
+                    max: 1.0,
+                },
+            )
         };
         Self {
             xy_x: bipolar("Character X"),

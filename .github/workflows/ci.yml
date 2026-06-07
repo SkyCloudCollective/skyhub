@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  # ── Rust: the DSP core + (later) instruments. Golden-render tests live here. ──
+  # ── Rust: DSP core + instruments + plugin wrappers. Golden-render tests here. ──
   rust:
     runs-on: ubuntu-latest
     steps:
@@ -24,6 +24,22 @@ jobs:
       - run: cargo clippy --workspace -- -D warnings
       - run: cargo test --workspace
 
+  # ── Native plugins: build the CLAP/VST3 bundles (nih-plug needs no system
+  #    audio libs in `vst3` mode — no `standalone`). pluginval + the macOS/Windows
+  #    signed matrix run in a later release workflow (JAUNE: Marwan's keys). ──
+  plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo xtask bundle plugin-phaseplan --release
+      - run: cargo xtask bundle plugin-botanica --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugins-linux-x86_64
+          path: target/bundled/
+
   # ── API: the single FastAPI service. ──
   api:
     runs-on: ubuntu-latest
@@ -35,17 +51,24 @@ jobs:
           uv sync
           uv run pytest
 
-  # ── Web: SvelteKit static build + type-check. ──
+  # ── Web: build the DSP wasm, stage it, then the SvelteKit static build. The
+  #    studio is non-functional without the staged wasm, so this job owns both. ──
   web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # builds crates/dsp-wasm → apps/web/static/dsp/dsp_wasm.wasm + headless smoke
+      - run: bash tools/build-wasm.sh
       - working-directory: apps/web
         run: |
           pnpm run check
@@ -62,5 +85,6 @@ jobs:
           python-version: "3.12"
       # Scans the source tree with GENERIC patterns. The deployment-specific
       # pattern file (ci/audit-patterns.local) is gitignored and supplied only
-      # in the publish job, not here.
+      # in the publish job, not here. (The built .wasm is pure DSP — no embedded
+      # config — so it isn't scanned here; revisit if that changes.)
       - run: python3 ci/audit-artifact.py apps services packages crates docs ops

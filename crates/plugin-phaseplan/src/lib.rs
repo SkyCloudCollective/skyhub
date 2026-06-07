@@ -62,11 +62,18 @@ impl Default for PluginParams {
             .with_unit(" Hz")
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
             .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
-            resonance: FloatParam::new("Resonance", 0.18, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            resonance: FloatParam::new(
+                "Resonance",
+                0.18,
+                FloatRange::Linear { min: 0.0, max: 1.0 },
+            ),
             filter_env: FloatParam::new(
                 "Filter env",
                 0.5,
-                FloatRange::Linear { min: -1.0, max: 1.0 },
+                FloatRange::Linear {
+                    min: -1.0,
+                    max: 1.0,
+                },
             ),
             drive: FloatParam::new("Drive", 0.0, FloatRange::Linear { min: 0.0, max: 1.0 }),
             reverb: FloatParam::new("Reverb", 0.12, FloatRange::Linear { min: 0.0, max: 1.0 }),

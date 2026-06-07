@@ -12,7 +12,8 @@ body {
   min-height: 100%;
   background: var(--bg);
   background-image: var(--bg-grad);
-  background-attachment: fixed;
+  /* NB: no background-attachment:fixed — fixed backgrounds repaint the whole
+     viewport on every scroll, which (with translucent surfaces) caused jank. */
   color: var(--fg);
   font-family: var(--font-sans);
   font-size: var(--text-md);

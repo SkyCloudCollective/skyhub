@@ -19,8 +19,10 @@
     inset 0 1.5px 0 var(--glass-hi),
     inset 0 -14px 30px -20px var(--glass-lo),
     inset 0 0 0 1px color-mix(in srgb, var(--glass-hi) 22%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.05);
-  backdrop-filter: blur(var(--glass-blur)) saturate(185%) brightness(1.05);
+  /* Light blur only — saturate()/brightness() multiply the GPU cost and this
+     surface is used widely (cards), so keep the filter cheap to avoid scroll jank. */
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
   overflow: clip;
 }
 

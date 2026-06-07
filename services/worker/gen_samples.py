@@ -96,15 +96,57 @@ def groove(bpm: float = 90.0) -> np.ndarray:
     return y * 0.8
 
 
+NOTES = {
+    "C": 130.81, "D": 146.83, "E": 164.81, "F": 174.61,
+    "G": 196.0, "A": 220.0, "Bb": 233.08,
+}
+MINOR = [0, 3, 7, 12, 7, 3]
+MAJOR = [0, 4, 7, 11, 7, 4]
+
+
 def main() -> int:
     np.random.seed(7)  # deterministic demo set
-    written = [
-        _write("packs/aurora/kick_aurora.wav", kick()),
-        _write("packs/aurora/hat_aurora.wav", hat()),
-        _write("packs/aurora/arp_dawn_124_Am.wav", arp_loop(124, 220.0, [0, 3, 7, 12, 7, 3])),
-        _write("contributors/tev/pad_glass_C.wav", pad(130.81)),
-        _write("contributors/ama/groove_90.wav", groove(90)),
-    ]
+    written: list[pathlib.Path] = []
+
+    def w(rel: str, y: np.ndarray) -> None:
+        written.append(_write(rel, y))
+
+    # ── packs: drum + arp content across a few tempos ────────────────────────
+    for pack, bpm in (("aurora", 124), ("nocturne", 90), ("prism", 140), ("ember", 100)):
+        w(f"packs/{pack}/kick_{pack}.wav", kick())
+        w(f"packs/{pack}/hat_{pack}.wav", hat())
+        w(f"packs/{pack}/groove_{pack}_{bpm}.wav", groove(bpm))
+        for note in ("A", "C", "E"):
+            scale = MINOR if pack in ("nocturne", "ember") else MAJOR
+            w(f"packs/{pack}/arp_{pack}_{note}_{bpm}.wav", arp_loop(bpm, NOTES[note], scale))
+
+    # ── contributors: pads + arps + grooves + the odd one-shot ───────────────
+    contribs = {
+        "tev": [("pad", "C"), ("pad", "G"), ("arp", "E"), ("hat", None)],
+        "ama": [("groove", None), ("arp", "A"), ("pad", "D")],
+        "jack": [("arp", "F"), ("groove", None), ("pad", "A"), ("kick", None)],
+        "dash": [("pad", "E"), ("arp", "C"), ("hat", None)],
+        "leo": [("arp", "G"), ("pad", "F"), ("kick", None)],
+        "phantom": [("pad", "Bb"), ("arp", "D"), ("groove", None)],
+    }
+    bpms = [90, 100, 110, 124, 140, 160]
+    i = 0
+    for handle, items in contribs.items():
+        for kind, note in items:
+            bpm = bpms[i % len(bpms)]
+            i += 1
+            if kind == "pad":
+                w(f"contributors/{handle}/pad_{note}_{i:02d}.wav", pad(NOTES[note]))
+            elif kind == "arp":
+                scale = MAJOR if i % 2 else MINOR
+                w(f"contributors/{handle}/arp_{note}_{bpm}_{i:02d}.wav", arp_loop(bpm, NOTES[note], scale))
+            elif kind == "groove":
+                w(f"contributors/{handle}/groove_{bpm}_{i:02d}.wav", groove(bpm))
+            elif kind == "kick":
+                w(f"contributors/{handle}/kick_{i:02d}.wav", kick())
+            elif kind == "hat":
+                w(f"contributors/{handle}/hat_{i:02d}.wav", hat())
+
     for p in written:
         print(f"  wrote {p.relative_to(SAMPLES_ROOT)}")
     print(f"{len(written)} demo samples in {SAMPLES_ROOT}")

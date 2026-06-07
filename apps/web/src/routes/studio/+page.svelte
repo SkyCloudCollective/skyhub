@@ -258,10 +258,14 @@
 	}
 	.bar {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: var(--space-4);
+		gap: var(--space-3) var(--space-4);
 		padding: var(--space-3) var(--space-4);
 		border-radius: var(--radius-md);
+	}
+	.blurb {
+		min-width: 0;
 	}
 	.tabs {
 		display: flex;
@@ -371,6 +375,10 @@
 	.matrix select {
 		min-width: 0;
 		font-size: var(--text-xs);
+	}
+	.matrix input[type='range'] {
+		min-width: 0;
+		width: 100%;
 	}
 	.matrix .arrow {
 		color: var(--muted);

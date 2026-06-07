@@ -116,13 +116,13 @@
 		draw();
 	});
 
-	function onmove(e: PointerEvent) {
+	function pick(e: PointerEvent, radius: number | null) {
 		if (!canvas) return;
 		const r = canvas.getBoundingClientRect();
 		const mx = e.clientX - r.left;
 		const my = e.clientY - r.top;
 		let best: { p: GalaxyPoint; x: number; y: number } | null = null;
-		let bd = 14 * 14;
+		let bd = radius == null ? Infinity : radius * radius;
 		for (const pos of positions) {
 			const dx = pos.x - mx;
 			const dy = pos.y - my;
@@ -134,6 +134,9 @@
 		}
 		hover = best; // moving onto the card (on top) halts these events, so it persists
 	}
+	// hover (mouse) snaps within a small radius; a tap (touch) selects the nearest
+	const onmove = (e: PointerEvent) => pick(e, 14);
+	const ontap = (e: PointerEvent) => pick(e, e.pointerType === 'touch' ? null : 14);
 
 	function fmtBpm(b: number | null): string {
 		return b ? `${Math.round(b)} BPM` : '';
@@ -168,7 +171,12 @@
 {/if}
 
 <div class="plot glass">
-	<canvas bind:this={canvas} onpointermove={onmove} aria-hidden="true"></canvas>
+	<canvas
+		bind:this={canvas}
+		onpointermove={onmove}
+		onpointerdown={ontap}
+		aria-hidden="true"
+	></canvas>
 
 	{#if hover}
 		<div

@@ -120,4 +120,39 @@
 		color: var(--fg-dim);
 		line-height: 26px;
 	}
+
+	/* Mobile: wrap the bar; the nav becomes a horizontally-scrollable strip so
+	   every destination stays one swipe away (no overflow, no hamburger). */
+	@media (max-width: 680px) {
+		.topbar {
+			flex-wrap: wrap;
+			height: auto;
+			gap: var(--space-2);
+			padding: var(--space-2) var(--space-3);
+		}
+		nav {
+			order: 3;
+			width: 100%;
+			margin-right: 0;
+			overflow-x: auto;
+			flex-wrap: nowrap;
+			-webkit-overflow-scrolling: touch;
+			scrollbar-width: none;
+			padding-bottom: 2px;
+		}
+		nav::-webkit-scrollbar {
+			display: none;
+		}
+		.navlink {
+			white-space: nowrap;
+		}
+		.actions {
+			margin-left: auto;
+		}
+	}
+	@media (max-width: 420px) {
+		.brand .name {
+			display: none;
+		}
+	}
 </style>

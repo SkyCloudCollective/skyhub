@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import mimetypes
+import os
 import pathlib
 import sqlite3
 from contextlib import asynccontextmanager
@@ -724,3 +725,34 @@ def get_notifications(conn: sqlite3.Connection = Depends(db), me: str = Depends(
 @app.post("/v1/notifications/read")
 def read_notifications(conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
     return notify.mark_all_read(conn, me)
+
+
+# ── static SPA (single-origin deploy) ────────────────────────────────────────-
+# Optional: set RANCHSAMPLES_WEB to the built SvelteKit dir and this server also
+# serves the app (so one origin / one Tailscale URL serves the SPA + wasm + API,
+# no CORS). Off in tests (env unset). The catch-all is the LAST route, so /v1/*
+# and explicit routes always win; client-routed paths fall back to index.html.
+_WEB = os.environ.get("RANCHSAMPLES_WEB")
+if _WEB and pathlib.Path(_WEB).is_dir():
+    _web_root = pathlib.Path(_WEB).resolve()
+    _STATIC_MIME = {
+        ".wasm": "application/wasm",
+        ".js": "text/javascript",
+        ".mjs": "text/javascript",
+        ".css": "text/css",
+        ".json": "application/json",
+        ".svg": "image/svg+xml",
+        ".woff2": "font/woff2",
+        ".webmanifest": "application/manifest+json",
+        ".html": "text/html; charset=utf-8",
+    }
+
+    @app.get("/{full_path:path}")
+    def _spa(full_path: str):
+        if full_path == "v1" or full_path.startswith("v1/"):
+            raise HTTPException(status_code=404, detail="not found")
+        target = (_web_root / full_path).resolve()
+        if _web_root in target.parents and target.is_file():
+            media = _STATIC_MIME.get(target.suffix.lower()) or mimetypes.guess_type(str(target))[0]
+            return FileResponse(target, media_type=media)
+        return FileResponse(_web_root / "index.html", media_type="text/html; charset=utf-8")

@@ -79,12 +79,25 @@
 		font-weight: 600;
 		font-size: var(--text-lg);
 	}
-	/* A Bauhaus mark: three primary squares. */
+	/* A Bauhaus mark: three primaries, rendered as a glossy 3D chiclet. */
 	.mark {
-		width: 22px;
-		height: 22px;
-		border-radius: 5px;
+		position: relative;
+		width: 28px;
+		height: 28px;
+		border-radius: 9px;
 		background: linear-gradient(135deg, var(--bauhaus-red) 0 33%, var(--bauhaus-yellow) 33% 66%, var(--bauhaus-blue) 66% 100%);
+		box-shadow:
+			inset 0 1.5px 0 rgba(255, 255, 255, 0.75),
+			inset 0 -4px 7px -2px rgba(0, 0, 0, 0.45),
+			0 4px 9px -2px rgba(0, 0, 0, 0.45);
+	}
+	.mark::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background: linear-gradient(to bottom, rgba(255, 255, 255, 0.6), transparent 48%);
+		pointer-events: none;
 	}
 	nav {
 		display: flex;
@@ -104,7 +117,17 @@
 	}
 	.navlink[aria-current='page'] {
 		color: var(--accent-ink);
-		background: var(--accent);
+		background:
+			linear-gradient(
+				to bottom,
+				color-mix(in srgb, var(--accent) 72%, white),
+				var(--accent) 55%,
+				color-mix(in srgb, var(--accent) 88%, black)
+			);
+		box-shadow:
+			inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
+			0 4px 12px -5px var(--glow);
+		text-shadow: 0 1px 0 color-mix(in srgb, black 18%, transparent);
 	}
 	.actions {
 		display: flex;

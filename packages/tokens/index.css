@@ -1,5 +1,6 @@
 /* RanchSamples design system — single entry point.
-   Import order matters: tokens (custom properties) → glass skin → base reset. */
+   Import order matters: fonts → tokens (custom properties) → glass skin → base. */
+@import "./fonts.css";
 @import "./tokens.css";
 @import "./glass.css";
 @import "./base.css";

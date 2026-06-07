@@ -26,7 +26,7 @@ h1, h2, h3 {
   font-family: var(--font-display);
   line-height: var(--leading-tight);
   letter-spacing: var(--tracking-display);
-  font-weight: 600;
+  font-weight: 700;
   margin: 0 0 var(--space-3);
 }
 h1 { font-size: var(--text-2xl); }
@@ -41,25 +41,56 @@ code, kbd, pre { font-family: var(--font-mono); font-size: 0.95em; }
 
 img, svg, canvas { display: block; max-width: 100%; }
 
+/* Raised gel — every plain button is a glossy 3D lozenge: top-lit gradient, a
+   bright inner top edge, a dark inner bottom edge, and a drop shadow lifting it
+   off the glass. It presses IN on :active. */
 button {
   font: inherit;
   cursor: pointer;
   color: var(--fg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--gloss) 40%, var(--surface-2)), var(--surface-2));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
   padding: var(--space-2) var(--space-4);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    inset 0 -2px 4px -2px var(--glass-lo),
+    0 3px 8px -4px var(--glass-lo);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
-button:hover { border-color: var(--accent); }
+button:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--glass-border));
+}
+button:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 5px -1px var(--glass-lo),
+    0 1px 3px -2px var(--glass-lo);
+}
 button[disabled] { opacity: 0.5; cursor: not-allowed; }
 
+/* Recessed wells — inputs read as carved INTO the glass (inner shadow). */
 input, select, textarea {
   font: inherit;
   color: var(--fg);
-  background: var(--surface);
-  border: 1px solid var(--line);
+  appearance: none;
+  -webkit-appearance: none;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   padding: var(--space-2) var(--space-3);
+  box-shadow:
+    inset 0 2px 5px -2px var(--glass-lo),
+    inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 50%, transparent);
+}
+select {
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237b8aa0' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
 }
 
 .muted { color: var(--muted); }

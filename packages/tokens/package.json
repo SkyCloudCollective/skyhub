@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "RanchSamples design system — Bauhaus · Liquid Glass · Aero. Tokens + glass skin + base reset.",
+  "description": "RanchSamples design system \u2014 Bauhaus \u00b7 Liquid Glass \u00b7 Aero. Tokens + glass skin + base reset.",
   "type": "module",
   "exports": {
     ".": {
@@ -15,5 +15,13 @@
     "./glass.css": "./glass.css",
     "./base.css": "./base.css"
   },
-  "files": ["index.css", "tokens.css", "glass.css", "base.css", "index.d.ts", "README.md"]
+  "files": [
+    "fonts.css",
+    "index.css",
+    "tokens.css",
+    "glass.css",
+    "base.css",
+    "index.d.ts",
+    "README.md"
+  ]
 }

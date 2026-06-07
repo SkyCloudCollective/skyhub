@@ -1,0 +1,47 @@
+/* Self-hosted faces (sovereign, offline, no CDN at runtime). Files live in the
+   web app at /fonts/*.woff2. Display = Space Grotesk (geometric, Bauhaus-ish);
+   body = Atkinson Hyperlegible (the accessibility choice); numerals = JetBrains
+   Mono. font-display: swap so text paints immediately. */
+
+@font-face {
+	font-family: 'Space Grotesk';
+	src: url('/fonts/space-grotesk-500.woff2') format('woff2');
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Space Grotesk';
+	src: url('/fonts/space-grotesk-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Atkinson Hyperlegible';
+	src: url('/fonts/atkinson-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Atkinson Hyperlegible';
+	src: url('/fonts/atkinson-700.woff2') format('woff2');
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('/fonts/jetbrains-mono-400.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'JetBrains Mono';
+	src: url('/fonts/jetbrains-mono-600.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}

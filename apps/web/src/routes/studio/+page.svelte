@@ -12,6 +12,8 @@
 	import Knob from '$lib/components/studio/Knob.svelte';
 	import Keyboard from '$lib/components/studio/Keyboard.svelte';
 	import XYPad from '$lib/components/studio/XYPad.svelte';
+	import PresetBar from '$lib/components/studio/PresetBar.svelte';
+	import { makeState, type PresetState } from '$lib/studio/presets';
 
 	const engine = new StudioEngine();
 
@@ -90,6 +92,25 @@
 		}
 	}
 
+	// ── presets ──
+	function currentState(): PresetState {
+		return makeState(instrument, instrument === 'phaseplan' ? pp : bot, slots, { x: bx, y: by });
+	}
+	function applyPreset(s: PresetState) {
+		if (s.instrument !== instrument) return;
+		if (instrument === 'phaseplan') {
+			pp = { ...pp, ...s.params };
+			if (s.routes) slots = s.routes.map((r) => ({ ...r }));
+		} else {
+			bot = { ...bot, ...s.params };
+			if (s.xy) {
+				bx = s.xy.x;
+				by = s.xy.y;
+			}
+		}
+		if (started) flushAll();
+	}
+
 	function noteOn(n: number, vel: number) {
 		if (!started) void power();
 		engine.noteOn(n, vel);
@@ -137,6 +158,8 @@
 			</button>
 		</div>
 	</header>
+
+	<PresetBar {instrument} getState={currentState} onapply={applyPreset} />
 
 	{#if !started}
 		<p class="hint glass">

@@ -12,8 +12,9 @@ members = [
     "crates/dsp-core",
     "crates/botanica",
     "crates/phaseplan",
+    "crates/dsp-wasm",
     # added as each crate lands (keeps `cargo check` green meanwhile):
-    # "crates/dsp-wasm", "crates/plugin-botanica", "crates/plugin-phaseplan",
+    # "crates/plugin-botanica", "crates/plugin-phaseplan",
     # "crates/desktop", "crates/xtask",
 ]
 

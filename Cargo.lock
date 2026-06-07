@@ -14,6 +14,15 @@ name = "dsp-core"
 version = "0.1.0"
 
 [[package]]
+name = "dsp-wasm"
+version = "0.1.0"
+dependencies = [
+ "botanica",
+ "dsp-core",
+ "phaseplan",
+]
+
+[[package]]
 name = "phaseplan"
 version = "0.1.0"
 dependencies = [

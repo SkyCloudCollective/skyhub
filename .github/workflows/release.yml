@@ -1,0 +1,106 @@
+# release — on a `v*` tag, build the downloadable artifacts and publish them.
+#
+#   git tag v0.1.0 && git push origin v0.1.0   →   a GitHub Release with:
+#     - the CLAP/VST3 plugin bundles (Linux, Windows, macOS-arm64) + SHA256SUMS
+#     - the SkyHub container image pushed to GHCR (ghcr.io/<owner>/skyhub)
+#
+# JAUNE (operator follow-ups, not wired here): code signing / notarization
+# (Apple + Windows certs), Intel + universal macOS, the desktop .exe/.dmg and
+# the Android/iOS apps (need the Tauri shell + signing identities), and the
+# Forgejo registry mirror (needs an act_runner + registry secrets).
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the Release
+  packages: write   # push to GHCR
+
+jobs:
+  plugins-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: bash scripts/build-plugins-linux.sh --release
+      - run: cd dist && zip -r ../skyhub-plugins-linux-x86_64.zip linux-x86_64
+      - uses: actions/upload-artifact@v4
+        with: { name: linux, path: skyhub-plugins-linux-x86_64.zip }
+
+  plugins-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { targets: x86_64-pc-windows-msvc }
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-xwin
+      - run: bash scripts/build-plugins-windows.sh
+      - run: cd dist && zip -r ../skyhub-plugins-windows-x86_64.zip windows-x86_64
+      - uses: actions/upload-artifact@v4
+        with: { name: windows, path: skyhub-plugins-windows-x86_64.zip }
+
+  # Apple Silicon, unsigned. Intel + universal + notarization are operator follow-ups.
+  plugins-macos:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: |
+          cargo xtask bundle plugin-botanica --release
+          cargo xtask bundle plugin-phaseplan --release
+          mkdir -p dist/macos-arm64
+          cp -R target/bundled/*.clap target/bundled/*.vst3 dist/macos-arm64/
+      - run: cd dist && zip -r ../skyhub-plugins-macos-arm64.zip macos-arm64
+      - uses: actions/upload-artifact@v4
+        with: { name: macos, path: skyhub-plugins-macos-arm64.zip }
+
+  container:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Containerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/skyhub:latest
+            ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}
+
+  publish:
+    needs: [plugins-linux, plugins-windows, plugins-macos, container]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - run: |
+          mkdir -p out && find artifacts -name '*.zip' -exec cp {} out/ \;
+          cd out && sha256sum *.zip > SHA256SUMS && cat SHA256SUMS
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/*.zip
+            out/SHA256SUMS
+          body: |
+            SkyHub ${{ github.ref_name }}
+
+            Plugins (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
+            Container image: `ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}`.
+
+            macOS bundles are unsigned for now — right-click → Open, or remove the
+            quarantine attribute. Intel/universal + notarization + the desktop and
+            mobile apps are on the roadmap.

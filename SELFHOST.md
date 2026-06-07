@@ -92,6 +92,20 @@ until you have done your own legal due diligence on user-contributed content.
 
 ## Containers
 
-First-class container images + a Compose file are on the roadmap. Until then the
-process above runs cleanly under `systemd` or any container runtime you wrap it
-in (Python 3.12 + uv for the API/worker, a static dir for the web).
+A `Containerfile` builds SkyHub from source in three stages (Rust → the studio
+wasm, Node → the static SPA, Python+uv → the runtime) into one image that runs
+the API serving the SPA single-origin. Mount your library + DB at `/data`:
+
+```sh
+podman build -t skyhub:latest -f Containerfile .
+podman run --rm -p 8000:8000 \
+  -v ./data/catalog.db:/data/catalog.db:Z \
+  -v ./samples/library:/data/samples:ro,Z \
+  skyhub:latest
+```
+
+Open `http://<host>:8000/`. The image is also published to GHCR on each release
+(`ghcr.io/<owner>/skyhub:<tag>`), so you can skip the build:
+`podman run -p 8000:8000 -v ./data:/data:Z ghcr.io/<owner>/skyhub:latest`.
+
+A Compose file (app + a reverse proxy) is the next step.

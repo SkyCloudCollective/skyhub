@@ -1,0 +1,17 @@
+# Build context — keep it lean; everything below is rebuilt or runtime-mounted.
+.git
+**/node_modules
+**/target
+**/.venv
+**/.svelte-kit
+apps/web/build
+apps/web/.vite
+dist
+_artifacts
+data
+samples
+_meta
+*.db
+*.db-*
+docs/screenshots
+.claude

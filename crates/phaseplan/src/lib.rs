@@ -15,5 +15,7 @@
 #![forbid(unsafe_code)]
 
 pub mod osc_section;
+pub mod voice;
 
 pub use osc_section::{OscParams, OscSection};
+pub use voice::{Voice, VoiceParams};

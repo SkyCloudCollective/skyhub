@@ -11,9 +11,11 @@
 
 #![forbid(unsafe_code)]
 
+pub mod arp;
 pub mod resonance;
 pub mod voice_characters;
 
+use arp::Arp;
 use dsp_core::{Chorus, Delay, Drive, Oscillator, Reverb, Smoothed, Waveform};
 use resonance::ResonanceBank;
 use voice_characters::{blend, eff_macros, CharacterFilter};
@@ -34,6 +36,8 @@ pub struct BotanicaParams {
     pub xy_macro_mix: f32,    // 0..1 how much the orb biases the knobs
     pub resonance: f32,       // 0..1 harmonic resonance bank amount
     pub resonance_tilt: f32,  // -1..1 resonance brightness
+    pub arp_amount: f32,      // 0..1 transient-arp level
+    pub arp_density: f32,     // 0..1 arp trigger density
 }
 
 impl Default for BotanicaParams {
@@ -52,6 +56,8 @@ impl Default for BotanicaParams {
             xy_macro_mix: 0.45,
             resonance: 0.25,
             resonance_tilt: 0.0,
+            arp_amount: 0.3,
+            arp_density: 0.4,
         }
     }
 }
@@ -96,6 +102,7 @@ pub struct Engine {
     fallback: Oscillator,
     char_filter: CharacterFilter,
     res: ResonanceBank,
+    arp: Arp,
     drive: Drive,
     chorus: Chorus,
     delay: Delay,
@@ -121,6 +128,7 @@ impl Engine {
             fallback: Oscillator::new(sr),
             char_filter: CharacterFilter::new(sr),
             res: ResonanceBank::new(sr),
+            arp: Arp::new(sr),
             drive: Drive::default(),
             chorus: Chorus::new(sr),
             delay: Delay::new(sr, 1.0),
@@ -222,6 +230,19 @@ impl Engine {
         );
         let voiced = self.res.process(shaped);
 
+        // transient arp (key-locked sparkle; level + brightness follow the character)
+        let arp_lvl =
+            (self.params.arp_amount * (0.4 + bl.arp.level.max(0.0) * 2.0)).clamp(0.0, 1.0);
+        self.arp.set_params(
+            arp_lvl,
+            self.params.arp_density,
+            (0.2 + bl.arp.bright).clamp(0.0, 1.0),
+            5.0,
+            0.18,
+            6,
+        );
+        let pre_fx = voiced + self.arp.process(dry) * 0.6;
+
         // FX amounts driven by the effective macros + the character deltas
         self.drive.drive = self.drive_amt.next();
         self.chorus.rate_hz = 0.1 + eff.motion * 3.0;
@@ -232,7 +253,7 @@ impl Engine {
         let verb = (eff.bloom * 0.55 + bl.fx.verb).clamp(0.0, 0.9);
         self.reverb.set(eff.bloom, 0.3, verb);
 
-        let mut s = self.drive.process(voiced);
+        let mut s = self.drive.process(pre_fx);
         s = self.chorus.process(s);
         s = self.delay.process(s);
         s = self.reverb.process(s);

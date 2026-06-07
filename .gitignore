@@ -35,6 +35,7 @@ data/*.db
 data/*.db-wal
 data/*.db-shm
 data/_uploads/
+data/projects/
 
 # Generated demo audio (regenerate with `uv run python gen_samples.py`) + previews
 samples/synthetic/

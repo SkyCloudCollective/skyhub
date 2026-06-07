@@ -201,6 +201,83 @@ CREATE TABLE IF NOT EXISTS roadmap_entries (
 );
 CREATE INDEX IF NOT EXISTS idx_roadmap_status ON roadmap_entries(status);
 
+-- ── collaboration: "a GitHub of music" ──────────────────────────────────────-
+-- Collaborative projects (demos / records / loops / full DAW projects), synced
+-- across collaborators by a storage backend (a Nextcloud group folder in prod; a
+-- local folder in dev). The app owns the collaboration layer; the backend owns
+-- the file sync. Open (public) projects stay gated until the legal pass.
+CREATE TABLE IF NOT EXISTS collab_projects (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner       TEXT NOT NULL,                       -- handle
+    title       TEXT NOT NULL,
+    slug        TEXT UNIQUE,
+    description TEXT,
+    kind        TEXT,                                 -- 'track'|'loop-pack'|'album'|'remix'|...
+    daw         TEXT,                                 -- 'ableton'|'flstudio'|'bitwig'|'other'
+    visibility  TEXT NOT NULL DEFAULT 'private',      -- 'private'|'unlisted'|'open'
+    storage     TEXT NOT NULL DEFAULT 'local',        -- 'local'|'nextcloud'
+    store_ref   TEXT,                                  -- group-folder id / repo path (operator-set)
+    license     TEXT DEFAULT 'all-rights-reserved',
+    created_at  TEXT DEFAULT (datetime('now')),
+    updated_at  TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_cproj_owner ON collab_projects(owner);
+CREATE INDEX IF NOT EXISTS idx_cproj_vis   ON collab_projects(visibility);
+
+CREATE TABLE IF NOT EXISTS project_members (
+    project_id  INTEGER NOT NULL REFERENCES collab_projects(id) ON DELETE CASCADE,
+    handle      TEXT NOT NULL,
+    role        TEXT NOT NULL DEFAULT 'editor',       -- 'owner'|'editor'|'viewer'
+    invited_by  TEXT,
+    accepted_at TEXT,
+    PRIMARY KEY (project_id, handle)
+);
+
+CREATE TABLE IF NOT EXISTS project_invites (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES collab_projects(id) ON DELETE CASCADE,
+    handle     TEXT NOT NULL,                          -- invited member (in-app, not email)
+    role       TEXT NOT NULL DEFAULT 'editor',
+    token      TEXT NOT NULL,
+    status     TEXT NOT NULL DEFAULT 'pending',        -- 'pending'|'accepted'|'declined'|'revoked'
+    invited_by TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pinv_handle ON project_invites(handle, status);
+
+CREATE TABLE IF NOT EXISTS project_files (             -- indexed from the synced folder
+    project_id INTEGER NOT NULL REFERENCES collab_projects(id) ON DELETE CASCADE,
+    rel_path   TEXT NOT NULL,
+    kind       TEXT,                                    -- 'stem'|'loop'|'demo'|'record'|'project'|'sample'|'midi'
+    bytes      INTEGER,
+    sha256     TEXT,
+    version    INTEGER NOT NULL DEFAULT 1,
+    updated_by TEXT,
+    updated_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (project_id, rel_path)
+);
+
+CREATE TABLE IF NOT EXISTS project_activity (          -- the "git log"
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES collab_projects(id) ON DELETE CASCADE,
+    actor      TEXT,
+    action     TEXT,                                    -- 'create'|'add'|'update'|'remove'|'join'|'invite'|'comment'|'release'
+    target     TEXT,
+    data_json  TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pact_project ON project_activity(project_id);
+
+CREATE TABLE IF NOT EXISTS project_comments (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES collab_projects(id) ON DELETE CASCADE,
+    rel_path   TEXT,                                    -- nullable: file or whole-project comment
+    handle     TEXT NOT NULL,
+    body       TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pcom_project ON project_comments(project_id);
+
 -- ── migration bookkeeping (forward-only) ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS schema_migrations (
     version    TEXT PRIMARY KEY,     -- e.g. '0001_init'

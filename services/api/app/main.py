@@ -6,19 +6,20 @@ land in P0; write paths (uploads, community) follow in P1+.
 """
 from __future__ import annotations
 
+import hashlib
 import mimetypes
 import pathlib
 import sqlite3
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import __version__, auth, catalog, community
-from .db import PREVIEWS_ROOT, SAMPLES_ROOT, connect, init_db
+from . import __version__, auth, catalog, community, projects
+from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
 @asynccontextmanager
@@ -315,3 +316,222 @@ def remove_favorite(
     sample_id: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
 ):
     community.set_favorite(conn, me, sample_id, False)
+
+
+# ── collaboration: projects ("a GitHub of music") ────────────────────────────
+class ProjectCreate(BaseModel):
+    title: str
+    kind: Optional[str] = None
+    daw: Optional[str] = None
+    visibility: str = "private"
+    license: Optional[str] = None
+
+
+class ProjectPatch(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    kind: Optional[str] = None
+    daw: Optional[str] = None
+    license: Optional[str] = None
+    visibility: Optional[str] = None
+
+
+class InviteCreate(BaseModel):
+    handle: str
+    role: str = "editor"
+
+
+class PComment(BaseModel):
+    body: str
+    rel_path: Optional[str] = None
+
+
+@app.get("/v1/projects")
+def list_projects(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return projects.list_projects(conn, me)
+
+
+@app.post("/v1/projects", status_code=201)
+def create_project(
+    body: ProjectCreate, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    return _forbidden_to_http(
+        lambda: projects.create_project(
+            conn, me, body.title, kind=body.kind, daw=body.daw,
+            visibility=body.visibility, license=body.license or "all-rights-reserved",
+        )
+    )
+
+
+@app.get("/v1/projects/{pid}")
+def get_project(pid: str, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    try:
+        res = projects.get_project(conn, pid, me)
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="forbidden")
+    if res is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return res
+
+
+@app.patch("/v1/projects/{pid}")
+def patch_project(
+    pid: str, body: ProjectPatch,
+    conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting),
+):
+    res = _forbidden_to_http(
+        lambda: projects.update_project(conn, pid, me, body.model_dump(exclude_none=True))
+    )
+    if res is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return res
+
+
+@app.delete("/v1/projects/{pid}", status_code=204)
+def delete_project(pid: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    ok = _forbidden_to_http(lambda: projects.delete_project(conn, pid, me))
+    if not ok:
+        raise HTTPException(status_code=404, detail="project not found")
+
+
+# members & invitations
+@app.post("/v1/projects/{pid}/invite", status_code=201)
+def invite_member(
+    pid: str, body: InviteCreate,
+    conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting),
+):
+    res = _forbidden_to_http(lambda: projects.invite(conn, pid, me, body.handle, body.role))
+    if res is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return res
+
+
+@app.get("/v1/invites")
+def my_invites(conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return projects.my_invites(conn, me)
+
+
+@app.post("/v1/invites/{invite_id}/accept")
+def accept_invite(
+    invite_id: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    if not projects.respond_invite(conn, invite_id, me, True):
+        raise HTTPException(status_code=404, detail="invite not found")
+    return {"ok": True}
+
+
+@app.post("/v1/invites/{invite_id}/decline")
+def decline_invite(
+    invite_id: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    if not projects.respond_invite(conn, invite_id, me, False):
+        raise HTTPException(status_code=404, detail="invite not found")
+    return {"ok": True}
+
+
+@app.post("/v1/projects/{pid}/join", status_code=201)
+def join_project(pid: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)):
+    ok = _forbidden_to_http(lambda: projects.join_open(conn, pid, me))
+    if not ok:
+        raise HTTPException(status_code=404, detail="project not found")
+    return {"ok": True}
+
+
+@app.delete("/v1/projects/{pid}/members/{handle}", status_code=204)
+def remove_member(
+    pid: str, handle: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    ok = _forbidden_to_http(lambda: projects.remove_member(conn, pid, me, handle))
+    if not ok:
+        raise HTTPException(status_code=404, detail="project not found")
+
+
+# files (local stub backend; a Nextcloud group folder in prod)
+def _project_file_path(pid_dir: str, rel_path: str) -> pathlib.Path:
+    base = (PROJECTS_ROOT / pid_dir).resolve()
+    target = (base / rel_path).resolve()
+    if base != target and base not in target.parents:
+        raise HTTPException(status_code=400, detail="bad path")
+    return target
+
+
+@app.put("/v1/projects/{pid}/files/{rel_path:path}", status_code=201)
+async def upload_file(
+    pid: str, rel_path: str, request: Request,
+    kind: Optional[str] = None, me: str = Depends(acting),
+):
+    # async endpoint: open the DB connection in THIS thread (sqlite is thread-bound).
+    data = await request.body()
+    conn = connect()
+    try:
+        row = projects._project_row(conn, pid)
+        if not row:
+            raise HTTPException(status_code=404, detail="project not found")
+        path = _project_file_path(str(row["id"]), rel_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        sha = hashlib.sha256(data).hexdigest()
+        res = _forbidden_to_http(
+            lambda: projects.register_file(
+                conn, pid, me, rel_path, kind=kind, bytes_=len(data), sha256=sha
+            )
+        )
+        if res is None:
+            raise HTTPException(status_code=404, detail="project not found")
+        return res
+    finally:
+        conn.close()
+
+
+@app.get("/v1/projects/{pid}/files/{rel_path:path}")
+def download_file(
+    pid: str, rel_path: str, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)
+):
+    try:
+        proj = projects.get_project(conn, pid, me)  # view-permission check
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="forbidden")
+    if proj is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    path = _project_file_path(str(proj["project"]["id"]), rel_path)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="file missing")
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        filename=pathlib.Path(rel_path).name,
+    )
+
+
+@app.delete("/v1/projects/{pid}/files/{rel_path:path}", status_code=204)
+def delete_file(
+    pid: str, rel_path: str, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    row = projects._project_row(conn, pid)
+    if not row:
+        raise HTTPException(status_code=404, detail="project not found")
+    ok = _forbidden_to_http(lambda: projects.remove_file(conn, pid, me, rel_path))
+    if not ok:
+        raise HTTPException(status_code=404, detail="project not found")
+    p = _project_file_path(str(row["id"]), rel_path)
+    if p.is_file():
+        p.unlink()
+
+
+# comments
+@app.get("/v1/projects/{pid}/comments")
+def project_comments(pid: str, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)):
+    return projects.list_comments(conn, pid)
+
+
+@app.post("/v1/projects/{pid}/comments", status_code=201)
+def add_project_comment(
+    pid: str, body: PComment,
+    conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting),
+):
+    res = _forbidden_to_http(
+        lambda: projects.add_comment(conn, pid, me, body.body, rel_path=body.rel_path)
+    )
+    if res is None:
+        raise HTTPException(status_code=404, detail="project not found")
+    return res

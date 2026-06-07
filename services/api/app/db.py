@@ -30,6 +30,10 @@ SAMPLES_ROOT = pathlib.Path(
 PREVIEWS_ROOT = pathlib.Path(
     os.environ.get("RANCHSAMPLES_PREVIEWS", REPO_ROOT / "_meta" / "previews")
 )
+# Collaborative project files (local stub backend; a Nextcloud group folder in prod).
+PROJECTS_ROOT = pathlib.Path(
+    os.environ.get("RANCHSAMPLES_PROJECTS", REPO_ROOT / "data" / "projects")
+)
 
 
 def connect(db_path: str | os.PathLike | None = None, read_only: bool = False) -> sqlite3.Connection:

@@ -14,6 +14,7 @@
 pub mod arp;
 pub mod freeze;
 pub mod resonance;
+pub mod strings;
 pub mod voice_characters;
 
 use arp::Arp;

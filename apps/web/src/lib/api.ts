@@ -260,3 +260,39 @@ export const projectComments = (id: number) =>
 	api<{ id: number; rel_path: string | null; handle: string; body: string; created_at: string }[]>(`/v1/projects/${id}/comments`);
 export const addProjectComment = (id: number, body: string, rel_path?: string) =>
 	send(`/v1/projects/${id}/comments`, 'POST', { body, rel_path });
+
+// ── transparency: roadmap, feature requests + votes, feedback ────────────────
+export interface RoadmapEntry {
+	id: number;
+	title: string;
+	body: string | null;
+	status: string; // planned | in-progress | shipped | paused
+	eta: string | null;
+	sort: number;
+	updated_at: string;
+}
+export interface FeatureRequest {
+	id: number;
+	handle: string;
+	title: string;
+	body: string | null;
+	status: string; // open | planned | in-progress | done | declined
+	created_at: string;
+	votes: number;
+	voted: boolean;
+}
+export interface VoteResult {
+	id: number;
+	votes: number;
+	voted: boolean;
+}
+
+export const getRoadmap = () => api<RoadmapEntry[]>('/v1/roadmap');
+export const listFeatureRequests = (status?: string) =>
+	api<FeatureRequest[]>(`/v1/feature-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`);
+export const createFeatureRequest = (title: string, body?: string) =>
+	send<FeatureRequest>('/v1/feature-requests', 'POST', { title, body });
+export const voteFeature = (id: number, on: boolean) =>
+	send<VoteResult>(`/v1/feature-requests/${id}/vote`, on ? 'POST' : 'DELETE');
+export const sendFeedback = (message: string, context?: string) =>
+	send<{ id: number; ok: boolean }>('/v1/feedback', 'POST', { message, context });

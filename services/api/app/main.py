@@ -18,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from . import __version__, auth, catalog, community, projects
+from . import __version__, auth, board, catalog, community, projects
 from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -535,3 +535,66 @@ def add_project_comment(
     if res is None:
         raise HTTPException(status_code=404, detail="project not found")
     return res
+
+
+# ── transparency: roadmap, feature requests + votes, feedback ────────────────-
+class FeatureRequestCreate(BaseModel):
+    title: str
+    body: Optional[str] = None
+
+
+class FeedbackCreate(BaseModel):
+    message: str
+    context: Optional[str] = None
+
+
+@app.get("/v1/roadmap")
+def get_roadmap(conn: sqlite3.Connection = Depends(db)):
+    return board.list_roadmap(conn)
+
+
+@app.get("/v1/feature-requests")
+def list_feature_requests(
+    status: Optional[str] = Query(default=None),
+    conn: sqlite3.Connection = Depends(db),
+    me: str = Depends(acting),
+):
+    return board.list_feature_requests(conn, me, status)
+
+
+@app.post("/v1/feature-requests", status_code=201)
+def create_feature_request(
+    body: FeatureRequestCreate,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    return _forbidden_to_http(lambda: board.create_feature_request(conn, me, body.title, body.body))
+
+
+@app.post("/v1/feature-requests/{rid}/vote")
+def upvote_feature(
+    rid: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    res = board.vote(conn, rid, me, True)
+    if res is None:
+        raise HTTPException(status_code=404, detail="request not found")
+    return res
+
+
+@app.delete("/v1/feature-requests/{rid}/vote")
+def unvote_feature(
+    rid: int, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    res = board.vote(conn, rid, me, False)
+    if res is None:
+        raise HTTPException(status_code=404, detail="request not found")
+    return res
+
+
+@app.post("/v1/feedback", status_code=201)
+def submit_feedback(
+    body: FeedbackCreate,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    return _forbidden_to_http(lambda: board.submit_feedback(conn, me, body.message, body.context))

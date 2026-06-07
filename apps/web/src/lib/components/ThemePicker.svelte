@@ -54,7 +54,7 @@
 	</button>
 
 	{#if open}
-		<div class="panel glass-2" role="dialog" aria-label={$t('appearance.toggle')}>
+		<div class="panel" role="dialog" aria-label={$t('appearance.toggle')}>
 			<!-- mode -->
 			<div class="row">
 				<span class="lbl">{$t('appearance.mode')}</span>
@@ -172,6 +172,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+		/* Legible floating panel — near-opaque + blur (no content bleed-through). */
+		background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+		-webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+		backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+		border: 1px solid var(--glass-border);
+		box-shadow: var(--glass-shadow);
 		transform-origin: top right;
 		animation: rs-pop var(--dur-fast) var(--ease-out);
 	}

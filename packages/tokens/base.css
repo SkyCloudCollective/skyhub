@@ -101,49 +101,24 @@ select {
 }
 
 /* ============================================================================
-   Motion — smooth by default, calm, accessible. Every duration below comes from
-   --dur-* which collapse to 0 under prefers-reduced-motion (see tokens.css), so
-   the accessibility floor is automatic. Easing is the shared Aero ease-out.
+   Motion — SUBTLE + SNAPPY. Only cheap, fast state easing (colour/border) on
+   interactive text surfaces — no transform/box-shadow/opacity animation across
+   the whole tree (that read as sluggish), no page crossfade, no smooth-scroll.
+   Durations come from --dur-* which collapse to 0 under prefers-reduced-motion.
+   Components animate their own hover lifts locally; buttons keep their own
+   press transition (see the `button` rule above).
    ============================================================================ */
-html { scroll-behavior: smooth; }
-
-/* Interactive surfaces ease their state changes (hover / focus / active). Zero
-   specificity (:where) so components keep full control of their own values. */
-:where(a, .navlink, .card, summary, label, .chip, [role="button"]) {
+:where(a, .navlink, summary, label, .chip, [role="button"]) {
   transition:
     color var(--dur-fast) var(--ease-out),
     background-color var(--dur-fast) var(--ease-out),
-    border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-out),
-    opacity var(--dur-base) var(--ease-out);
+    border-color var(--dur-fast) var(--ease-out);
 }
 :where(input, select, textarea) {
   transition:
     border-color var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    background-color var(--dur-fast) var(--ease-out);
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-/* Calm entrances. */
-@keyframes rs-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes rs-pop  { from { opacity: 0; transform: translateY(-6px) scale(0.985); } to { opacity: 1; transform: none; } }
-
-.rs-reveal { animation: rs-rise var(--dur-base) var(--ease-out) both; }
-
-/* A gentle stagger for card grids / lists (caps the cascade so it never drags). */
-.rs-stagger > * { animation: rs-rise var(--dur-base) var(--ease-out) both; }
-.rs-stagger > *:nth-child(2)   { animation-delay: 40ms; }
-.rs-stagger > *:nth-child(3)   { animation-delay: 80ms; }
-.rs-stagger > *:nth-child(4)   { animation-delay: 120ms; }
-.rs-stagger > *:nth-child(5)   { animation-delay: 160ms; }
-.rs-stagger > *:nth-child(6)   { animation-delay: 200ms; }
-.rs-stagger > *:nth-child(n+7) { animation-delay: 240ms; }
-
-/* Page crossfade via the View Transitions API (layout opts in with onNavigate).
-   Default browser crossfade, retimed to the Aero base duration. */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: var(--dur-base);
-  animation-timing-function: var(--ease-out);
-}
+/* A small entrance for popovers/menus (e.g. the theme picker). */
+@keyframes rs-pop { from { opacity: 0; transform: translateY(-6px) scale(0.985); } to { opacity: 1; transform: none; } }

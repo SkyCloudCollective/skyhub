@@ -63,7 +63,7 @@
 	</button>
 
 	{#if open}
-		<div class="panel glass-2" role="menu">
+		<div class="panel" role="menu">
 			<h3>Notifications</h3>
 			<ul>
 				{#each items as n (n.id)}
@@ -119,6 +119,12 @@
 		overflow: auto;
 		padding: var(--space-3);
 		border-radius: var(--radius-md);
+		/* A legible floating panel: near-opaque surface + blur so content behind
+		   doesn't bleed through (a dropdown, not a translucent overlay). */
+		background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+		-webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+		backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+		border: 1px solid var(--glass-border);
 		box-shadow: var(--glass-shadow);
 		z-index: 30;
 	}

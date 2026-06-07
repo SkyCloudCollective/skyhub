@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '@ranchsamples/tokens'; // design system: tokens + glass skin + base reset
-	import { onNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
 	import { theme } from '$lib/theme'; // subscribing applies data-theme to <html>
 	import Topbar from '$lib/components/Topbar.svelte';
@@ -10,19 +9,6 @@
 	// touch the store so the subscription (which sets data-theme) stays live
 	$effect(() => {
 		void $theme;
-	});
-
-	// Smooth page crossfade via the View Transitions API. No-ops where the API is
-	// missing (graceful) or when the user asked for reduced motion (accessibility).
-	onNavigate((navigation) => {
-		if (typeof document === 'undefined' || !('startViewTransition' in document)) return;
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-		return new Promise((resolve) => {
-			document.startViewTransition(async () => {
-				resolve();
-				await navigation.complete;
-			});
-		});
 	});
 </script>
 

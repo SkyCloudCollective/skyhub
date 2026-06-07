@@ -122,8 +122,16 @@ export const BOTANICA_GROUPS: Group[] = [
 		ctls: [k(11, 'Amount', 0, 1, 0.25), k(12, 'Tilt', -1, 1, 0), k(8, 'Q', 0, 1, 0.3)]
 	},
 	{
-		title: 'Transient arp',
-		ctls: [k(13, 'Amount', 0, 1, 0.3), k(14, 'Density', 0, 1, 0.4)]
+		// The "plucky sine" sparkle layer (sound design by Tev). The Spark
+		// toggle gates the whole layer with a declick ramp — off is truly
+		// silent, no click "in the plucks absence".
+		title: 'Spark (pluck)',
+		ctls: [
+			sw(21, 'Spark', ['Off', 'On'], 1),
+			k(22, 'Rate', 0.1, 8, 2.4, 'Hz', 'exp'),
+			k(13, 'Amount', 0, 1, 0.3),
+			k(14, 'Density', 0, 1, 0.4)
+		]
 	},
 	{
 		title: 'Granular freeze',

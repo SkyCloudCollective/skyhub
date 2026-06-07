@@ -33,6 +33,8 @@ struct PluginParams {
     arp: FloatParam,
     #[id = "strngs"]
     strings: FloatParam,
+    #[id = "spark"]
+    spark: BoolParam,
     #[id = "gain"]
     gain: FloatParam,
 }
@@ -61,6 +63,9 @@ impl Default for PluginParams {
             resonance: unit("Resonance", 0.25),
             arp: unit("Arp", 0.3),
             strings: unit("Strings", 0.0),
+            // Spark (pluck) layer — on by default; toggling it off ramps the
+            // layer to silence in the DSP (no click). Sound design by Tev.
+            spark: BoolParam::new("Spark", true),
             gain: FloatParam::new(
                 "Output",
                 -3.0,
@@ -95,6 +100,7 @@ impl BotanicaPlugin {
             resonance: self.params.resonance.value(),
             arp_amount: self.params.arp.value(),
             strings_level: self.params.strings.value(),
+            spark_on: if self.params.spark.value() { 1.0 } else { 0.0 },
             ..BotanicaParams::default()
         }
     }

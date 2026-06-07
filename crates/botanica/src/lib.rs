@@ -48,6 +48,11 @@ pub struct BotanicaParams {
     pub strings_air: f32,     // 0..1 breath/bow transient amount
     pub strings_density: f32, // 0..1 chord-fire probability bias
     pub strings_tone: f32,    // 0..1 dark→bright body of the bed
+    // Spark layer (Tev A2): the "plucky sine" sparkle as an explicitly
+    // switchable layer. When `spark_on` flips to 0 the whole layer's gain
+    // ramps to silence (declick) so there is no click "in the plucks absence".
+    pub spark_on: f32,   // 0/1 master enable for the spark/pluck layer
+    pub spark_rate: f32, // Hz free-running pluck rate (the "constant" pollen)
 }
 
 impl Default for BotanicaParams {
@@ -74,6 +79,8 @@ impl Default for BotanicaParams {
             strings_air: 0.4,
             strings_density: 0.4,
             strings_tone: 0.5,
+            spark_on: 1.0,   // on by default — it is Botanica's signature shimmer
+            spark_rate: 2.4, // Hz; v1's pollen sat ~0.2..5 Hz
         }
     }
 }
@@ -134,6 +141,7 @@ pub struct Engine {
     motion_s: Smoothed,
     drive_amt: Smoothed,
     gain: Smoothed,
+    spark_gain: Smoothed, // declick gate for the spark/pluck layer (A2)
     params: BotanicaParams,
 }
 
@@ -162,6 +170,9 @@ impl Engine {
             motion_s: Smoothed::new(p.motion, 0.025, sr),
             drive_amt: Smoothed::new(1.0 + p.blend * 5.0, 0.02, sr),
             gain: Smoothed::new(p.intensity, 0.02, sr),
+            // ~12 ms gate: fast enough to feel responsive when toggling, slow
+            // enough that the layer fades in/out instead of clicking.
+            spark_gain: Smoothed::new(if p.spark_on >= 0.5 { 1.0 } else { 0.0 }, 0.012, sr),
             params: p,
         };
         e.delay.set(0.24, 0.25, 0.18, 0.3);
@@ -211,6 +222,11 @@ impl Engine {
         // resonance bank tracks the voice pitch
         let ratio = (2.0_f32).powf(p.retune_semis / 12.0).clamp(0.35, 2.5);
         self.res.set_pitch(110.0 * ratio);
+        // spark layer: declick gate target + free-running pluck rate (A2)
+        self.spark_gain
+            .set_target(if p.spark_on >= 0.5 { 1.0 } else { 0.0 });
+        let rate = p.spark_rate.clamp(0.1, 8.0);
+        self.arp.set_clock(false, rate, 120.0, 2.0);
     }
 
     #[inline]
@@ -313,7 +329,12 @@ impl Engine {
             0.0
         };
 
-        let pre_fx = voiced + self.arp.process(dry) * 0.6 + frz + strings_bus;
+        // Spark layer: always advance the arp (its clock/voices keep state so a
+        // re-enable is seamless) but multiply its bus by the declick gate. When
+        // `spark_on` is 0 the gate ramps to 0, so the layer fades to true silence
+        // with no click "in the plucks absence" (Tev A2).
+        let spark = self.arp.process(dry) * 0.6 * self.spark_gain.next();
+        let pre_fx = voiced + spark + frz + strings_bus;
 
         // FX amounts driven by the effective macros + the character deltas
         self.drive.drive = self.drive_amt.next();
@@ -460,6 +481,77 @@ mod tests {
             fast > normal * 1.5,
             "retune did not speed up: fast {fast} normal {normal}"
         );
+    }
+
+    #[test]
+    fn spark_toggle_fades_without_a_click() {
+        // A2: turning the spark layer off must ramp to silence (no step). We
+        // crank the spark, let it ring, flip it off and assert the per-sample
+        // delta never jumps full-scale across the transition.
+        let mut e = Engine::new(48_000.0);
+        e.set_params(BotanicaParams {
+            spark_on: 1.0,
+            arp_amount: 1.0,
+            arp_density: 1.0,
+            // mute everything else so we isolate the spark layer's tail
+            intensity: 0.0,
+            bloom: 0.0,
+            resonance: 0.0,
+            strings_level: 0.0,
+            ..BotanicaParams::default()
+        });
+        for _ in 0..24_000 {
+            e.next();
+        }
+        // Flip spark off mid-ring and capture the transition.
+        e.set_params(BotanicaParams {
+            spark_on: 0.0,
+            arp_amount: 1.0,
+            arp_density: 1.0,
+            intensity: 0.0,
+            bloom: 0.0,
+            resonance: 0.0,
+            strings_level: 0.0,
+            ..BotanicaParams::default()
+        });
+        let mut prev = e.next();
+        let mut max_delta = 0.0f32;
+        for _ in 0..48_000 {
+            let s = e.next();
+            assert!(s.is_finite());
+            max_delta = max_delta.max((s - prev).abs());
+            prev = s;
+        }
+        assert!(
+            max_delta < 0.2,
+            "spark toggle-off stepped (click): max delta {max_delta}"
+        );
+    }
+
+    #[test]
+    fn spark_off_is_quieter_than_on() {
+        // With intensity/resonance neutral, disabling spark must lower energy
+        // (the layer is actually gated, not just renamed).
+        let render = |on: f32| {
+            let mut e = Engine::new(48_000.0);
+            e.set_params(BotanicaParams {
+                spark_on: on,
+                arp_amount: 1.0,
+                arp_density: 1.0,
+                intensity: 0.0,
+                bloom: 0.0,
+                resonance: 0.0,
+                strings_level: 0.0,
+                ..BotanicaParams::default()
+            });
+            let mut buf = vec![0.0; 96_000];
+            e.process(&mut buf);
+            assert!(buf.iter().all(|v| v.is_finite()));
+            rms(&buf)
+        };
+        let on = render(1.0);
+        let off = render(0.0);
+        assert!(off < on, "spark off was not quieter: on {on} off {off}");
     }
 
     #[test]

@@ -12,11 +12,13 @@
 #![forbid(unsafe_code)]
 
 pub mod arp;
+pub mod freeze;
 pub mod resonance;
 pub mod voice_characters;
 
 use arp::Arp;
 use dsp_core::{Chorus, Delay, Drive, Oscillator, Reverb, Smoothed, Waveform};
+use freeze::GranularFreeze;
 use resonance::ResonanceBank;
 use voice_characters::{blend, eff_macros, CharacterFilter};
 
@@ -38,6 +40,8 @@ pub struct BotanicaParams {
     pub resonance_tilt: f32,  // -1..1 resonance brightness
     pub arp_amount: f32,      // 0..1 transient-arp level
     pub arp_density: f32,     // 0..1 arp trigger density
+    pub freeze_size: f32,     // 0..1 granular grain size
+    pub freeze_spray: f32,    // 0..1 granular position jitter
 }
 
 impl Default for BotanicaParams {
@@ -58,6 +62,8 @@ impl Default for BotanicaParams {
             resonance_tilt: 0.0,
             arp_amount: 0.3,
             arp_density: 0.4,
+            freeze_size: 0.5,
+            freeze_spray: 0.3,
         }
     }
 }
@@ -103,6 +109,8 @@ pub struct Engine {
     char_filter: CharacterFilter,
     res: ResonanceBank,
     arp: Arp,
+    freeze_mod: GranularFreeze,
+    frozen: bool,
     drive: Drive,
     chorus: Chorus,
     delay: Delay,
@@ -129,6 +137,8 @@ impl Engine {
             char_filter: CharacterFilter::new(sr),
             res: ResonanceBank::new(sr),
             arp: Arp::new(sr),
+            freeze_mod: GranularFreeze::new(sr),
+            frozen: false,
             drive: Drive::default(),
             chorus: Chorus::new(sr),
             delay: Delay::new(sr, 1.0),
@@ -161,6 +171,18 @@ impl Engine {
 
     pub fn set_params(&mut self, p: BotanicaParams) {
         self.params = p;
+        // freeze edge: capture a window on the rising edge (off the audio thread)
+        let now = p.freeze >= 0.5;
+        if now && !self.frozen {
+            if self.voice.loaded() {
+                let center = self.voice.pos as usize;
+                self.freeze_mod.capture(&self.voice.data, center, 0.3);
+                self.frozen = true;
+            }
+        } else if !now && self.frozen {
+            self.freeze_mod.clear();
+            self.frozen = false;
+        }
         self.retarget();
     }
 
@@ -241,7 +263,23 @@ impl Engine {
             0.18,
             6,
         );
-        let pre_fx = voiced + self.arp.process(dry) * 0.6;
+        // granular freeze (sustained pad from a captured window; clamped grain rate)
+        let frz = if self.frozen || self.freeze_mod.is_active() {
+            self.freeze_mod.set_params(
+                self.params.freeze >= 0.5,
+                0.2 + eff.depth * 0.7,
+                self.params.freeze_size,
+                0.5,
+                self.params.freeze_spray,
+                self.pitch_ratio(),
+                0.3,
+            );
+            self.freeze_mod.process()
+        } else {
+            0.0
+        };
+
+        let pre_fx = voiced + self.arp.process(dry) * 0.6 + frz;
 
         // FX amounts driven by the effective macros + the character deltas
         self.drive.drive = self.drive_amt.next();

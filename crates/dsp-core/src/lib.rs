@@ -19,6 +19,7 @@
 pub mod env;
 pub mod filter;
 pub mod fx;
+pub mod grain;
 pub mod lfo;
 pub mod modmatrix;
 pub mod osc;
@@ -29,6 +30,7 @@ pub mod wavetable;
 pub use env::{Adsr, EnvStage};
 pub use filter::{Svf, SvfMode};
 pub use fx::{Chorus, Delay, DelayLine, Drive, Reverb};
+pub use grain::{GrainCloud, MAX_GRAINS};
 pub use lfo::Lfo;
 pub use modmatrix::{ModMatrix, ModRoute};
 pub use osc::{poly_blep, Oscillator, Waveform};

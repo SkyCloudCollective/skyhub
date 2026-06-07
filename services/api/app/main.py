@@ -6,7 +6,10 @@ land in P0; write paths (uploads, community) follow in P1+.
 """
 from __future__ import annotations
 
+import base64
+import binascii
 import hashlib
+import hmac
 import mimetypes
 import os
 import pathlib
@@ -16,10 +19,10 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-from . import __version__, auth, board, catalog, community, config, notify, projects, social
+from . import __version__, auth, board, catalog, community, config, notify, projects, social, tube
 from .db import PREVIEWS_ROOT, PROJECTS_ROOT, SAMPLES_ROOT, connect, init_db
 
 
@@ -45,6 +48,55 @@ app.add_middleware(
 )
 
 
+# ── gated preview: HTTP Basic Auth (RS_BASIC_AUTH="user:password") ────────────-
+# A coarse front-door lock for a protected preview deploy. When the env is set,
+# every request needs Basic creds except the unauthenticated health probe; when
+# it's unset there is NO gate at all (tests + local stay untouched). This is the
+# *only* consumer of the Authorization header — app identity rides on X-RS-Handle
+# (see acting()), so the lock and the per-member identity never collide. CORS
+# preflight (OPTIONS) is allowed through so browsers can negotiate first.
+_BASIC_EXEMPT = ("/healthz", "/v1/health")
+
+
+def _basic_creds() -> tuple[str, str] | None:
+    raw = os.environ.get("RS_BASIC_AUTH", "")
+    if not raw or ":" not in raw:
+        return None
+    user, _, pw = raw.partition(":")
+    return user, pw
+
+
+def _basic_ok(header: str | None, user: str, pw: str) -> bool:
+    if not header or not header.lower().startswith("basic "):
+        return False
+    try:
+        decoded = base64.b64decode(header.split(" ", 1)[1].strip(), validate=True).decode("utf-8")
+    except (ValueError, binascii.Error, UnicodeDecodeError):
+        return False
+    got_user, _, got_pw = decoded.partition(":")
+    # constant-time on both halves; the &-ed booleans avoid short-circuit timing.
+    return hmac.compare_digest(got_user, user) & hmac.compare_digest(got_pw, pw)
+
+
+@app.middleware("http")
+async def basic_auth_gate(request: Request, call_next):
+    creds = _basic_creds()
+    if creds is None or request.method == "OPTIONS" or request.url.path in _BASIC_EXEMPT:
+        return await call_next(request)
+    if _basic_ok(request.headers.get("authorization"), *creds):
+        return await call_next(request)
+    return Response(
+        status_code=401,
+        content="Authentication required.",
+        headers={"WWW-Authenticate": 'Basic realm="RanchSamples"'},
+    )
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok"}
+
+
 def db() -> sqlite3.Connection:
     conn = connect(read_only=True)
     try:
@@ -62,9 +114,16 @@ def wdb() -> sqlite3.Connection:
         conn.close()
 
 
-def acting(authorization: Optional[str] = Header(default=None)) -> str:
-    """The handle performing the request (dev mode -> the dev handle)."""
-    return auth.current_handle(authorization)
+def acting(
+    authorization: Optional[str] = Header(default=None),
+    x_rs_handle: Optional[str] = Header(default=None),
+) -> str:
+    """The handle performing the request (dev mode -> the dev handle).
+
+    X-RS-Handle (the app identity header) wins over Authorization so it can
+    coexist with the HTTP Basic gate (RS_BASIC_AUTH), which uses Authorization.
+    """
+    return auth.current_handle(authorization, app_handle=x_rs_handle)
 
 
 # ── discovery ────────────────────────────────────────────────────────────────
@@ -74,10 +133,10 @@ def health():
 
 
 @app.get("/v1/me")
-def me():
+def me(handle: str = Depends(acting)):
     return {
         "auth_enabled": auth.auth_enabled(),
-        "handle": auth.current_handle(),
+        "handle": handle,
         "open_ugc": config.open_ugc_enabled(),
     }
 
@@ -685,6 +744,123 @@ def remove_sample_reaction(
     if res is None:
         raise HTTPException(status_code=404, detail="sample not found")
     return res
+
+
+# ── RanchTube: community video (embeds only, phase 1) ────────────────────────-
+class VideoCreate(BaseModel):
+    url: str
+    title: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+
+
+@app.get("/v1/tube")
+def list_tube(
+    handle: Optional[str] = None,
+    category: Optional[str] = None,
+    limit: int = Query(default=60, ge=1),  # upper bound is clamped in tube.list_videos
+    conn: sqlite3.Connection = Depends(db),
+):
+    who = auth.clean_handle(handle) if handle else None
+    return tube.list_videos(conn, handle=who, category=category, limit=limit)
+
+
+@app.get("/v1/tube/{video_id}")
+def get_tube(video_id: int, conn: sqlite3.Connection = Depends(db)):
+    v = tube.get_video(conn, video_id)
+    if not v:
+        raise HTTPException(status_code=404, detail="video not found")
+    return v
+
+
+@app.post("/v1/tube", status_code=201)
+def post_tube(
+    body: VideoCreate, conn: sqlite3.Connection = Depends(wdb), me: str = Depends(acting)
+):
+    # ValueError (unknown provider / non-https / unreadable id) -> 400.
+    return _forbidden_to_http(
+        lambda: tube.create_video(
+            conn, me, url=body.url, title=body.title,
+            description=body.description, category=body.category,
+        )
+    )
+
+
+# reactions + comments on a video — reuse the generic social helpers (target a
+# subject by (type, id)). RanchTube videos are subject_type='video'.
+@app.get("/v1/tube/{video_id}/comments")
+def tube_comments(video_id: int, conn: sqlite3.Connection = Depends(db)):
+    if not tube.get_video(conn, video_id):
+        raise HTTPException(status_code=404, detail="video not found")
+    return social.list_comments(conn, video_id, subject_type="video")
+
+
+@app.post("/v1/tube/{video_id}/comments", status_code=201)
+def add_tube_comment(
+    video_id: int,
+    body: CommentCreate,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    if not tube.get_video(conn, video_id):
+        raise HTTPException(status_code=404, detail="video not found")
+    res = _forbidden_to_http(
+        lambda: social.add_comment(
+            conn, video_id, me, body.body, parent_id=body.parent_id, subject_type="video"
+        )
+    )
+    if res is None:
+        raise HTTPException(status_code=404, detail="video not found")
+    return res
+
+
+@app.delete("/v1/tube/{video_id}/comments/{comment_id}", status_code=204)
+def delete_tube_comment(
+    video_id: int,
+    comment_id: int,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    res = _forbidden_to_http(lambda: social.delete_comment(conn, comment_id, me))
+    if res is None:
+        raise HTTPException(status_code=404, detail="comment not found")
+
+
+@app.get("/v1/tube/{video_id}/reactions")
+def tube_reactions(
+    video_id: int, conn: sqlite3.Connection = Depends(db), me: str = Depends(acting)
+):
+    if not tube.get_video(conn, video_id):
+        raise HTTPException(status_code=404, detail="video not found")
+    return social.reactions(conn, video_id, me, subject_type="video")
+
+
+@app.post("/v1/tube/{video_id}/reactions")
+def add_tube_reaction(
+    video_id: int,
+    body: ReactionToggle,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    if not tube.get_video(conn, video_id):
+        raise HTTPException(status_code=404, detail="video not found")
+    return _forbidden_to_http(
+        lambda: social.toggle_reaction(conn, video_id, me, body.emoji, True, subject_type="video")
+    )
+
+
+@app.delete("/v1/tube/{video_id}/reactions")
+def remove_tube_reaction(
+    video_id: int,
+    body: ReactionToggle,
+    conn: sqlite3.Connection = Depends(wdb),
+    me: str = Depends(acting),
+):
+    if not tube.get_video(conn, video_id):
+        raise HTTPException(status_code=404, detail="video not found")
+    return _forbidden_to_http(
+        lambda: social.toggle_reaction(conn, video_id, me, body.emoji, False, subject_type="video")
+    )
 
 
 # ── follows + feed + notifications ───────────────────────────────────────────-

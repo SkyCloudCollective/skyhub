@@ -37,8 +37,19 @@ def is_admin(handle: str | None) -> bool:
     return clean_handle(handle) in admin_handles()
 
 
-def current_handle(authorization: str | None = None) -> str:
-    """Resolve the acting handle. Dev mode -> the dev handle. (JWT verify: P3.)"""
+def current_handle(authorization: str | None = None, app_handle: str | None = None) -> str:
+    """Resolve the acting handle. Dev mode -> the dev handle. (JWT verify: P3.)
+
+    `app_handle` is the app identity header (X-RS-Handle). It takes PRIORITY over
+    the Authorization header: the gated preview puts HTTP Basic creds in
+    Authorization, so identity must come from a header that doesn't collide with
+    it. When auth is enabled the app handle still wins (until JWT verification
+    lands in P3); when it's absent we keep today's behaviour exactly.
+    """
+    if app_handle:
+        cleaned = clean_handle(app_handle)
+        if cleaned:
+            return cleaned
     if not auth_enabled():
         return _DEV_HANDLE
     # P3: verify Bearer JWT here and return its subject.

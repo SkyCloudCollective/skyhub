@@ -5,6 +5,7 @@
 	import { dragOutSample } from '$lib/drag';
 	import { favoriteIds, toggleFavorite } from '$lib/collections';
 	import Waveform from './Waveform.svelte';
+	import Icon from './Icon.svelte';
 
 	let { sample }: { sample: Sample } = $props();
 
@@ -39,7 +40,7 @@
 		onclick={() => toggle(sample.id)}
 		aria-label={isPlaying ? 'Pause' : 'Play'}
 	>
-		{isPlaying ? '❚❚' : '▶'}
+		<Icon name={isPlaying ? 'pause' : 'play'} />
 	</button>
 
 	<div class="body">
@@ -68,9 +69,9 @@
 			aria-label={fav ? 'Remove favourite' : 'Add favourite'}
 			title="Favourite"
 		>
-			{fav ? '★' : '☆'}
+			<Icon name={fav ? 'star-fill' : 'star'} />
 		</button>
-		<a class="dl" href={downloadUrl(sample.id)} download={sample.filename} aria-label="Download" title="Download">↓</a>
+		<a class="dl" href={downloadUrl(sample.id)} download={sample.filename} aria-label="Download" title="Download"><Icon name="download" /></a>
 	</div>
 </article>
 

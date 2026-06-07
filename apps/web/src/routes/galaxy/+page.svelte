@@ -3,6 +3,7 @@
 	import { getGalaxy, type GalaxyPoint, type Sample } from '$lib/api';
 	import { toggle, playingId } from '$lib/player';
 	import { dragOutSample } from '$lib/drag';
+	import Icon from '$lib/components/Icon.svelte';
 
 	type Axis = 'brightness' | 'percussiveness' | 'noisiness' | 'loudness' | 'bpm';
 	const AXES: { key: Axis; label: string }[] = [
@@ -195,9 +196,9 @@
 			</div>
 			<div class="actions">
 				<button class="accent-fill" onclick={() => hover && toggle(hover.p.id)}>
-					{$playingId === hover.p.id ? '❚❚' : '▶'} Audition
+					<Icon name={$playingId === hover.p.id ? 'pause' : 'play'} /> Audition
 				</button>
-				<a class="ghost" href={`/s/${hover.p.id}`}>Open ↗</a>
+				<a class="ghost" href={`/s/${hover.p.id}`}>Open <Icon name="arrow-up-right" size="0.9em" /></a>
 			</div>
 		</div>
 	{/if}

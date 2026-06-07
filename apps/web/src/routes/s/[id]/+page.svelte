@@ -18,6 +18,7 @@
 	import { playingId, toggle } from '$lib/player';
 	import { dragOutSample } from '$lib/drag';
 	import Waveform from '$lib/components/Waveform.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	const PALETTE = ['🔥', '💜', '🎧', '✨', '🥁'];
 
@@ -89,7 +90,7 @@
 		title="Drag to your DAW"
 	>
 		<button class="play" class:on={isPlaying} onclick={() => sample && toggle(sample.id)} aria-label={isPlaying ? 'Pause' : 'Play'}>
-			{isPlaying ? '❚❚' : '▶'}
+			<Icon name={isPlaying ? 'pause' : 'play'} />
 		</button>
 		<div class="meta">
 			<h1>{sample.title}</h1>

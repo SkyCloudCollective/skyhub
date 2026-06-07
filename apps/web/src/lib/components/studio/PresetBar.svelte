@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '$lib/components/Icon.svelte';
 	import type { Instrument } from '$lib/studio/engine';
 	import {
 		FACTORY,
@@ -113,7 +114,7 @@
 	<span class="sep" aria-hidden="true"></span>
 
 	<div class="dice">
-		<button class="accent-fill" onclick={roll} title="Randomise within range (seeded)">⚄ Dice</button>
+		<button class="accent-fill dice-btn" onclick={roll} title="Randomise within range (seeded)"><Icon name="dice" /> Dice</button>
 		<input
 			type="range"
 			min="0.02"

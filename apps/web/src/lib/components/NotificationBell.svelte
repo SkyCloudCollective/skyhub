@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getNotifications, readNotifications, type Notification } from '$lib/api';
+	import Icon from './Icon.svelte';
 
 	let items = $state<Notification[]>([]);
 	let unread = $state(0);
@@ -57,7 +58,7 @@
 
 <div class="bell-wrap" bind:this={root}>
 	<button class="ghost bell" onclick={toggle} aria-label={`Notifications${unread ? ` (${unread} new)` : ''}`} aria-expanded={open}>
-		<span aria-hidden="true">◔</span>
+		<Icon name="bell" />
 		{#if unread > 0}<span class="badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>{/if}
 	</button>
 

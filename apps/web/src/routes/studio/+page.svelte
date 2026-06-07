@@ -9,6 +9,7 @@
 		defaults,
 		type Group
 	} from '$lib/studio/params';
+	import Icon from '$lib/components/Icon.svelte';
 	import Knob from '$lib/components/studio/Knob.svelte';
 	import Keyboard from '$lib/components/studio/Keyboard.svelte';
 	import XYPad from '$lib/components/studio/XYPad.svelte';
@@ -154,7 +155,7 @@
 				<span class="voices" title="active voices">{voices}/8</span>
 			{/if}
 			<button class="power" class:on={started} onclick={power} aria-pressed={started}>
-				{started ? '● live' : '▶ power'}
+				<Icon name="power" /> {started ? 'live' : 'power'}
 			</button>
 		</div>
 	</header>

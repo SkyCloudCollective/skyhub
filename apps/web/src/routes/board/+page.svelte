@@ -9,6 +9,7 @@
 		type RoadmapEntry,
 		type FeatureRequest
 	} from '$lib/api';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let roadmap = $state<RoadmapEntry[]>([]);
 	let requests = $state<FeatureRequest[]>([]);
@@ -95,7 +96,7 @@
 							aria-label={`${r.voted ? 'Remove vote' : 'Upvote'} (${r.votes})`}
 							title="Upvote"
 						>
-							<span class="caret" aria-hidden="true">▲</span>
+							<span class="caret" aria-hidden="true"><Icon name="caret-up" size="0.95em" /></span>
 							<span class="count">{r.votes}</span>
 						</button>
 						<div class="req-body">

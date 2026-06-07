@@ -8,15 +8,19 @@
 		followUser,
 		listCollections,
 		search,
+		getTube,
 		type Profile,
 		type Collection,
-		type Sample
+		type Sample,
+		type Video
 	} from '$lib/api';
 	import SampleCard from '$lib/components/SampleCard.svelte';
+	import VideoCard from '$lib/components/VideoCard.svelte';
 
 	let profile = $state<Profile | null>(null);
 	let collections = $state<Collection[]>([]);
 	let samples = $state<Sample[]>([]);
+	let videos = $state<Video[]>([]);
 	let me = $state('');
 
 	const handle = $derived($page.params.handle ?? '');
@@ -34,6 +38,7 @@
 		bio = profile.bio ?? '';
 		collections = await listCollections(handle).catch(() => []);
 		samples = (await search({ contributor: handle, limit: 100 }).catch(() => ({ hits: [] }))).hits;
+		videos = await getTube({ handle, limit: 100 }).catch(() => []);
 	}
 	onMount(load);
 
@@ -94,6 +99,13 @@
 		</div>
 	{:else}
 		<p class="muted">No samples yet.</p>
+	{/if}
+
+	{#if videos.length}
+		<h2>Channel</h2>
+		<div class="videos">
+			{#each videos as v (v.id)}<VideoCard video={v} />{/each}
+		</div>
 	{/if}
 {/if}
 
@@ -159,5 +171,11 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+	.videos {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: var(--space-4);
+		margin-top: var(--space-3);
 	}
 </style>

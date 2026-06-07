@@ -1,14 +1,25 @@
 // Tiny API client. In production the static app is same-origin behind the
 // reverse proxy (API_BASE = ''); in dev it points at the local FastAPI on :8000.
 // Override with VITE_RS_API at build time for the desktop shell / internal builds.
+import { currentHandle } from '$lib/handle';
+
 const DEV_DEFAULT = 'http://127.0.0.1:8000';
 
 export const API_BASE: string =
 	(import.meta.env.VITE_RS_API as string | undefined) ??
 	(import.meta.env.DEV ? DEV_DEFAULT : '');
 
+// Every request carries the acting member as X-RS-Handle. This is the app
+// identity header the server reads in priority (see auth.current_handle); it
+// coexists with the optional HTTP Basic preview gate, which uses Authorization.
+function withHandle(init?: RequestInit): RequestInit {
+	const headers = new Headers(init?.headers);
+	headers.set('X-RS-Handle', currentHandle());
+	return { ...init, headers };
+}
+
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
-	const res = await fetch(`${API_BASE}${path}`, init);
+	const res = await fetch(`${API_BASE}${path}`, withHandle(init));
 	if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${path}`);
 	return (await res.json()) as T;
 }
@@ -150,11 +161,11 @@ export interface Profile {
 }
 
 async function send<T>(path: string, method: string, body?: unknown): Promise<T | null> {
-	const res = await fetch(`${API_BASE}${path}`, {
+	const res = await fetch(`${API_BASE}${path}`, withHandle({
 		method,
 		headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
 		body: body !== undefined ? JSON.stringify(body) : undefined
-	});
+	}));
 	if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${path}`);
 	if (res.status === 204) return null;
 	return (await res.json()) as T;
@@ -379,3 +390,43 @@ export const getMembers = () => api<Member[]>('/v1/members');
 export const getFeed = () => api<Sample[]>('/v1/feed');
 export const getNotifications = () => api<Inbox>('/v1/notifications');
 export const readNotifications = () => send<{ unread: number }>('/v1/notifications/read', 'POST');
+
+// ── RanchTube: community video (embeds only) ─────────────────────────────────
+export type VideoProvider = 'youtube' | 'vimeo' | 'peertube';
+export interface Video {
+	id: number;
+	handle: string;
+	title: string;
+	provider: VideoProvider;
+	video_ref: string;
+	url: string; // canonical watch URL (rebuilt server-side; safe to use as href)
+	description: string | null;
+	category: string | null;
+	created_at: string;
+	embed_url: string | null; // rebuilt iframe src; null only if a row is invalid
+	watch_url: string | null;
+}
+export interface TubeParams {
+	handle?: string;
+	category?: string;
+	limit?: number;
+}
+
+export function getTube(params: TubeParams = {}): Promise<Video[]> {
+	const qs = new URLSearchParams();
+	for (const [k, v] of Object.entries(params)) {
+		if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
+	}
+	const q = qs.toString();
+	return api<Video[]>(`/v1/tube${q ? `?${q}` : ''}`);
+}
+export const getVideo = (id: number) => api<Video>(`/v1/tube/${id}`);
+export const postVideo = (body: { url: string; title: string; description?: string; category?: string }) =>
+	send<Video>('/v1/tube', 'POST', body);
+
+export const tubeReactions = (id: number) => api<Reactions>(`/v1/tube/${id}/reactions`);
+export const toggleTubeReaction = (id: number, emoji: string, on: boolean) =>
+	send<Reactions>(`/v1/tube/${id}/reactions`, on ? 'POST' : 'DELETE', { emoji });
+export const tubeComments = (id: number) => api<Comment[]>(`/v1/tube/${id}/comments`);
+export const addTubeComment = (id: number, body: string, parent_id?: number) =>
+	send<Comment>(`/v1/tube/${id}/comments`, 'POST', { body, parent_id });

@@ -58,6 +58,20 @@ just build     # web (static) + plugins + desktop bundles
 just audit     # residue scan on built artifacts
 ```
 
+## The SKY collective
+
+RanchSamples is the platform of **the SKY collective** — a small community of musicians
+and builders. It's community-owned and operator-curated: members propose and upvote on
+the in-app **Board** (`/board`), and a maintainer keeps the project coherent and curates
+the public roadmap.
+
+- [`GOVERNANCE.md`](GOVERNANCE.md) — how decisions are made (consultative democracy).
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to set up and send a change.
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — how we treat each other.
+
+Public (open) collaboration is gated off in code (`RS_OPEN_UGC`) until a consent/legal
+review is complete; private and unlisted collaboration are always available.
+
 ## License
 
 GNU AGPL-3.0-or-later. Network use is distribution: a hosted instance must offer its

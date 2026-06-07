@@ -11,9 +11,11 @@
 
 #![forbid(unsafe_code)]
 
+pub mod resonance;
 pub mod voice_characters;
 
 use dsp_core::{Chorus, Delay, Drive, Oscillator, Reverb, Smoothed, Waveform};
+use resonance::ResonanceBank;
 use voice_characters::{blend, eff_macros, CharacterFilter};
 
 /// User-facing parameters. Macros are normalised 0..1 unless noted.
@@ -30,6 +32,8 @@ pub struct BotanicaParams {
     pub character_q: f32,     // 0..1 push the character filter resonance
     pub filter_lfo_rate: f32, // bounded cutoff-LFO rate (Hz)
     pub xy_macro_mix: f32,    // 0..1 how much the orb biases the knobs
+    pub resonance: f32,       // 0..1 harmonic resonance bank amount
+    pub resonance_tilt: f32,  // -1..1 resonance brightness
 }
 
 impl Default for BotanicaParams {
@@ -46,6 +50,8 @@ impl Default for BotanicaParams {
             character_q: 0.3,
             filter_lfo_rate: 0.12,
             xy_macro_mix: 0.45,
+            resonance: 0.25,
+            resonance_tilt: 0.0,
         }
     }
 }
@@ -89,6 +95,7 @@ pub struct Engine {
     voice: SampleVoice,
     fallback: Oscillator,
     char_filter: CharacterFilter,
+    res: ResonanceBank,
     drive: Drive,
     chorus: Chorus,
     delay: Delay,
@@ -113,6 +120,7 @@ impl Engine {
             voice: SampleVoice::default(),
             fallback: Oscillator::new(sr),
             char_filter: CharacterFilter::new(sr),
+            res: ResonanceBank::new(sr),
             drive: Drive::default(),
             chorus: Chorus::new(sr),
             delay: Delay::new(sr, 1.0),
@@ -150,7 +158,7 @@ impl Engine {
 
     /// Push parameter values to the smoothers (called off the hot loop on change).
     fn retarget(&mut self) {
-        let p = &self.params;
+        let p = self.params; // Copy — no borrow of self while we touch sub-modules
         self.xy_x_s.set_target(p.xy_x.clamp(-1.0, 1.0));
         self.xy_y_s.set_target(p.xy_y.clamp(-1.0, 1.0));
         self.int_s.set_target(p.intensity.clamp(0.0, 1.0));
@@ -158,6 +166,9 @@ impl Engine {
         self.motion_s.set_target(p.motion.clamp(0.0, 1.0));
         self.drive_amt
             .set_target(1.0 + p.blend.clamp(0.0, 1.0) * 5.0);
+        // resonance bank tracks the voice pitch
+        let ratio = (2.0_f32).powf(p.retune_semis / 12.0).clamp(0.35, 2.5);
+        self.res.set_pitch(110.0 * ratio);
     }
 
     #[inline]
@@ -198,6 +209,19 @@ impl Engine {
             self.params.filter_lfo_rate,
         );
 
+        // harmonic resonance bank (amount + Q follow the character)
+        let res_amt = (self.params.resonance * (0.4 + bl.res.amount * 2.0)).clamp(0.0, 1.0);
+        let res_q = (2.0 + bl.res.q + self.params.character_q * 6.0).clamp(0.5, 24.0);
+        self.res.set_params(
+            res_amt,
+            res_q,
+            self.params.resonance_tilt,
+            1.0,
+            80.0,
+            9000.0,
+        );
+        let voiced = self.res.process(shaped);
+
         // FX amounts driven by the effective macros + the character deltas
         self.drive.drive = self.drive_amt.next();
         self.chorus.rate_hz = 0.1 + eff.motion * 3.0;
@@ -208,7 +232,7 @@ impl Engine {
         let verb = (eff.bloom * 0.55 + bl.fx.verb).clamp(0.0, 0.9);
         self.reverb.set(eff.bloom, 0.3, verb);
 
-        let mut s = self.drive.process(shaped);
+        let mut s = self.drive.process(voiced);
         s = self.chorus.process(s);
         s = self.delay.process(s);
         s = self.reverb.process(s);

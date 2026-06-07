@@ -11,16 +11,33 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 
 ## Screenshots
 
-![The studio — two native instruments running in an AudioWorklet](docs/screenshots/studio-dark.png)
+The studio — two native instruments (Botanica, PhasePlan) running in an AudioWorklet:
+
+![The studio](docs/screenshots/studio-dark.png)
 
 | | |
 |:--|:--|
 | ![Library](docs/screenshots/library-light.png) | ![Galaxy](docs/screenshots/galaxy-dark.png) |
 | **Library** — browse, search, preview, drag straight into your DAW | **Galaxy** — the library plotted by timbre (brightness × percussiveness) |
-| ![Tube](docs/screenshots/tube-light.png) | ![Members](docs/screenshots/members-light.png) |
-| **Tube** — the community video wall | **Members** — the people behind the collective |
+| ![Media hub](docs/screenshots/media-light.png) | ![Tube](docs/screenshots/tube-dark.png) |
+| **Media** — one login to the collective's self-hosted services | **Tube** — the community video wall |
 
-<sub>Every surface ships light + dark (`aero-light` / `aero-dark`); more captures in [`docs/screenshots/`](docs/screenshots/).</sub>
+**Light + dark, on every surface:**
+
+| | |
+|:--|:--|
+| ![Library, light](docs/screenshots/library-dark.png) | ![Studio, light](docs/screenshots/studio-light.png) |
+| **Library** (dark) | **Studio** (light) |
+
+**Responsive — the same app on a phone:**
+
+<p>
+  <img src="docs/screenshots/library-mobile.png" alt="Library on mobile" width="220">
+  <img src="docs/screenshots/studio-mobile.png" alt="Studio on mobile" width="220">
+  <img src="docs/screenshots/media-mobile.png" alt="Media on mobile" width="220">
+</p>
+
+<sub>Captured in English; every surface ships `aero-light` / `aero-dark` plus user-chosen palettes and a custom accent. More in [`docs/screenshots/`](docs/screenshots/).</sub>
 
 ## Surfaces
 

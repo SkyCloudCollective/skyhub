@@ -7,7 +7,7 @@
 //! lock to (mono, last-note priority). With no note held it falls back to the
 //! drone. Sound design by **Tev**; original implementation.
 
-use morph::{MorphParams, Engine};
+use morph::{Engine, MorphParams};
 use nih_plug::prelude::*;
 use std::sync::Arc;
 

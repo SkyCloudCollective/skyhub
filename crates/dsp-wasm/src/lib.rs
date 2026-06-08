@@ -16,8 +16,8 @@
 //! This is the one crate that needs `unsafe` (raw pointers + `#[no_mangle]`);
 //! every actual signal-processing line still lives in the safe DSP crates.
 
-use morph::{MorphParams, Engine as MorphEngine};
 use dsp_core::{ModRoute, SvfMode, Waveform};
+use morph::{Engine as MorphEngine, MorphParams};
 use phaseplan::{Engine as PhasePlanEngine, PhasePlanParams, VoiceParams};
 
 // ── raw audio-buffer allocation in wasm linear memory ────────────────────────

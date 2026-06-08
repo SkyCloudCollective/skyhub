@@ -21,39 +21,40 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 
 <div align="center">
 
-The studio — two native instruments (Botanica, PhasePlan) running in an AudioWorklet:
+**The library** — browse, search, preview, and drag a sample straight into your DAW.
 
-![The studio](docs/screenshots/studio-dark.png)
+![SkyHub — the samples library](docs/screenshots/library-light.png)
 
 </div>
 
 | | |
 |:--|:--|
-| ![Library](docs/screenshots/library-light.png) | ![Galaxy](docs/screenshots/galaxy-dark.png) |
-| **Library** — browse, search, preview, drag straight into your DAW | **Galaxy** — the library plotted by timbre (brightness × percussiveness) |
-| ![Media hub](docs/screenshots/media-light.png) | ![Tube](docs/screenshots/tube-dark.png) |
+| ![Studio](docs/screenshots/studio-dark.png) | ![Galaxy](docs/screenshots/galaxy-dark.png) |
+| **Studio** — two native instruments (Botanica, PhasePlan) in an AudioWorklet | **Galaxy** — the library plotted by timbre (brightness × percussiveness) |
+| ![Media](docs/screenshots/media-light.png) | ![Tube](docs/screenshots/tube-dark.png) |
 | **Media** — one login to the collective's self-hosted services | **Tube** — the community video wall |
 
 **Light + dark, on every surface:**
 
 | | |
 |:--|:--|
-| ![Library, light](docs/screenshots/library-dark.png) | ![Studio, light](docs/screenshots/studio-light.png) |
-| **Library** (dark) | **Studio** (light) |
+| ![Library, dark](docs/screenshots/library-dark.png) | ![Studio, light](docs/screenshots/studio-light.png) |
+| **Library** — dark | **Studio** — light |
 
-**Responsive — the same app on a phone:**
+**On a phone — the same app, calm and complete:**
 
-<p>
-  <img src="docs/screenshots/library-mobile.png" alt="Library on mobile" width="220">
-  <img src="docs/screenshots/studio-mobile.png" alt="Studio on mobile" width="220">
-  <img src="docs/screenshots/media-mobile.png" alt="Media on mobile" width="220">
-</p>
+| | | |
+|:--:|:--:|:--:|
+| ![Library](docs/screenshots/library-mobile.png) | ![Studio](docs/screenshots/studio-mobile.png) | ![Galaxy](docs/screenshots/galaxy-mobile.png) |
+| **Library** | **Studio** | **Galaxy** |
+| ![Media](docs/screenshots/media-mobile.png) | ![Tube](docs/screenshots/tube-mobile.png) | ![Board](docs/screenshots/board-mobile.png) |
+| **Media** | **Tube** | **Board** |
 
 <sub>Captured in English; every surface ships `aero-light` / `aero-dark` plus user-chosen palettes and a custom accent. More in [`docs/screenshots/`](docs/screenshots/).</sub>
 
 <div align="center">
 
-**Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member:
+**Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member.
 
 ![Theme customisation](docs/screenshots/theme.webp)
 

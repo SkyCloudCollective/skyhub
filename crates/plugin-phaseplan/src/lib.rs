@@ -111,7 +111,7 @@ impl PhasePlanPlugin {
 
 impl Plugin for PhasePlanPlugin {
     const NAME: &'static str = "PhasePlan";
-    const VENDOR: &'static str = "the SkyCollective";
+    const VENDOR: &'static str = "the SkyCloudCollective";
     const URL: &'static str = "https://skyhub.dev";
     const EMAIL: &'static str = "noreply@skyhub.dev";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");

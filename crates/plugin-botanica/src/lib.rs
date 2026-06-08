@@ -109,7 +109,7 @@ impl BotanicaPlugin {
 
 impl Plugin for BotanicaPlugin {
     const NAME: &'static str = "Botanica";
-    const VENDOR: &'static str = "the SkyCollective";
+    const VENDOR: &'static str = "the SkyCloudCollective";
     const URL: &'static str = "https://skyhub.dev";
     const EMAIL: &'static str = "noreply@skyhub.dev";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");

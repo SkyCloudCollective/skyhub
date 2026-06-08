@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping build SkyHub with **the SkyCollective**. Music, code,
+Thanks for helping build SkyHub with **the SkyCloudCollective**. Music, code,
 docs, bug reports, and good ideas are all contributions. This guide covers the code
 path; for how decisions are made see [`GOVERNANCE.md`](GOVERNANCE.md), and please read
 the [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) first.

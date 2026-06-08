@@ -25,7 +25,7 @@
 <footer>
 	<hr class="bauhaus-rule" />
 	<p class="muted">
-		<a href="/about">SkyHub — the SkyCollective</a> · community-owned · AGPL-3.0 ·
+		<a href="/about">SkyHub — the SkyCloudCollective</a> · community-owned · AGPL-3.0 ·
 		sound design by Tev · meters by polarity
 	</p>
 </footer>

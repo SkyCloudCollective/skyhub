@@ -120,9 +120,9 @@ static web app — no SaaS, no database server, no Node runtime in production. A
 minimal instance is one command; a production instance is Caddy + uvicorn on one
 origin. See [`SELFHOST.md`](SELFHOST.md).
 
-## The SkyCollective
+## The SkyCloudCollective
 
-SkyHub is the platform of **the SkyCollective** — a small community of musicians
+SkyHub is the platform of **the SkyCloudCollective** — a small community of musicians
 and builders. It's community-owned and operator-curated: members propose and upvote on
 the in-app **Board** (`/board`), and a maintainer keeps the project coherent and curates
 the public roadmap.

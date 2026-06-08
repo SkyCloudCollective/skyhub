@@ -1,11 +1,11 @@
 <script lang="ts">
-	// A calm, static identity page for the SkyCollective. No data fetch.
+	// A calm, static identity page for the SkyCloudCollective. No data fetch.
 </script>
 
 <article class="about">
 	<header class="glass hero">
 		<span class="mark" aria-hidden="true"></span>
-		<h1>The SkyCollective</h1>
+		<h1>The SkyCloudCollective</h1>
 		<p class="lead">
 			A small community of musicians and builders sharing samples, instruments, and
 			projects. SkyHub is our platform — community-owned, self-hostable, and free.

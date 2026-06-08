@@ -1,6 +1,6 @@
 # Changelog
 
-Notable changes to RanchSamples. The format follows
+Notable changes to SkyHub. The format follows
 [Keep a Changelog](https://keepachangelog.com/); the project aims at
 [Semantic Versioning](https://semver.org/).
 

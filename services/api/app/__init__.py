@@ -1,3 +1,3 @@
-"""RanchSamples API package."""
+"""SkyHub API package."""
 
 __version__ = "0.1.0"

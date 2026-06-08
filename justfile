@@ -1,4 +1,4 @@
-# RanchSamples — one task runner fronting every toolchain.
+# SkyHub — one task runner fronting every toolchain.
 # `just` (https://github.com/casey/just). Run `just` to list recipes.
 
 set shell := ["bash", "-uc"]

@@ -1,4 +1,4 @@
-# Releasing RanchSamples
+# Releasing SkyHub
 
 TL;DR — the release sequence, in order:
 

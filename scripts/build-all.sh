@@ -32,7 +32,7 @@ VERSION="${BUILD_VERSION:-$(grep -m1 '^version\s*=' Cargo.toml | grep -oP '[\d]+
 TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 echo "======================================================"
-echo " RanchSamples plugin build — all platforms"
+echo " SkyHub plugin build — all platforms"
 echo " version : $VERSION"
 echo " time    : $TIMESTAMP"
 echo "======================================================"

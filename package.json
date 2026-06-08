@@ -1,5 +1,5 @@
 {
-  "name": "ranchsamples",
+  "name": "skyhub",
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "pnpm --filter @ranchsamples/web dev",
-    "build": "pnpm --filter @ranchsamples/web build",
+    "dev": "pnpm --filter @skyhub/web dev",
+    "build": "pnpm --filter @skyhub/web build",
     "check": "pnpm -r check",
     "lint": "pnpm -r lint"
   }

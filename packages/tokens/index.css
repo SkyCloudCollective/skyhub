@@ -1,4 +1,4 @@
-/* RanchSamples design system — single entry point.
+/* SkyHub design system — single entry point.
    Import order matters: fonts → tokens (custom properties) → glass skin → base. */
 @import "./fonts.css";
 @import "./tokens.css";

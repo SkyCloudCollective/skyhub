@@ -109,9 +109,9 @@ impl BotanicaPlugin {
 
 impl Plugin for BotanicaPlugin {
     const NAME: &'static str = "Botanica";
-    const VENDOR: &'static str = "the SKY collective";
-    const URL: &'static str = "https://ranchsamples.dev";
-    const EMAIL: &'static str = "noreply@ranchsamples.dev";
+    const VENDOR: &'static str = "the SkyCollective";
+    const URL: &'static str = "https://skyhub.dev";
+    const EMAIL: &'static str = "noreply@skyhub.dev";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[AudioIOLayout {
@@ -178,7 +178,7 @@ impl Plugin for BotanicaPlugin {
 }
 
 impl ClapPlugin for BotanicaPlugin {
-    const CLAP_ID: &'static str = "dev.ranchsamples.botanica";
+    const CLAP_ID: &'static str = "dev.skyhub.botanica";
     const CLAP_DESCRIPTION: Option<&'static str> =
         Some("Granular sample-morph generative instrument (sound design by Tev)");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);

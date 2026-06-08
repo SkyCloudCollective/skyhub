@@ -1,4 +1,4 @@
-# RanchSamples
+# SkyHub
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-2b6cd4)](LICENSE) [![Self-hostable](https://img.shields.io/badge/self--hostable-no%20SaaS-2fa15a)](SELFHOST.md) [![Plugins](https://img.shields.io/badge/plugins-VST3%20%C2%B7%20CLAP-514a40)](#surfaces) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-f4b71e)](CONTRIBUTING.md)
 
@@ -108,9 +108,9 @@ static web app — no SaaS, no database server, no Node runtime in production. A
 minimal instance is one command; a production instance is Caddy + uvicorn on one
 origin. See [`SELFHOST.md`](SELFHOST.md).
 
-## The SKY collective
+## The SkyCollective
 
-RanchSamples is the platform of **the SKY collective** — a small community of musicians
+SkyHub is the platform of **the SkyCollective** — a small community of musicians
 and builders. It's community-owned and operator-curated: members propose and upvote on
 the in-app **Board** (`/board`), and a maintainer keeps the project coherent and curates
 the public roadmap.

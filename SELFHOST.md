@@ -1,6 +1,6 @@
-# Self-hosting RanchSamples
+# Self-hosting SkyHub
 
-RanchSamples is built to be run by anyone, on one small box. The whole platform
+SkyHub is built to be run by anyone, on one small box. The whole platform
 is **one FastAPI process over a single SQLite file**, plus a **prebuilt static
 web app** (no Node runtime in production). The Python worker is only needed to
 analyse audio when you add it — not to keep the site up.
@@ -62,7 +62,7 @@ Two ways to fill it:
 - **Your own folder** — drop audio into `RANCHSAMPLES_ROOT` following the layout
   above, then `cd services/worker && uv run python ingest.py` to analyse + index.
 - **Import an existing catalog** — `services/worker/import_v1.py` copies a prior
-  RanchSamples catalog (curated rows + human/system tags) and recomputes timbre.
+  SkyHub catalog (curated rows + human/system tags) and recomputes timbre.
   See [`services/worker/README.md`](services/worker/README.md).
 
 The DB (`data/*.db`) and the audio (`samples/`) never live in git — they are your

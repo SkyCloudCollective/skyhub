@@ -1,9 +1,9 @@
 {
-  "name": "@ranchsamples/tokens",
+  "name": "@skyhub/tokens",
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "RanchSamples design system \u2014 Bauhaus \u00b7 Liquid Glass \u00b7 Aero. Tokens + glass skin + base reset.",
+  "description": "SkyHub design system \u2014 Bauhaus \u00b7 Liquid Glass \u00b7 Aero. Tokens + glass skin + base reset.",
   "type": "module",
   "exports": {
     ".": {

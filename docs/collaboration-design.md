@@ -23,7 +23,7 @@ rather than rebuild it. Two self-hostable engines the Ranch already runs:
    project maps to a shared folder; collaborators are granted access; the desktop
    app (or the user's Nextcloud client) syncs it. Versioning & conflicts are
    Nextcloud-native.
-2. **Collaboration layer = RanchSamples API + DB.** Projects, members & roles,
+2. **Collaboration layer = SkyHub API + DB.** Projects, members & roles,
    invitations, open-join, an activity log (the "git log": who added/updated what,
    when), comments, and a files index (mirrored from the folder via WebDAV).
 3. **"GitHub" semantics, phased.** Start with synced files + activity + Nextcloud

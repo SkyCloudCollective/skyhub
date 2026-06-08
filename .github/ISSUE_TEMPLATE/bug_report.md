@@ -20,7 +20,7 @@ What you thought would happen instead.
 Which part? (web app / API / worker / DSP / plugin / desktop / self-host)
 
 **Environment**
-- RanchSamples version or commit:
+- SkyHub version or commit:
 - OS + browser (for the web app) or DAW + host (for a plugin):
 
 **Anything else**

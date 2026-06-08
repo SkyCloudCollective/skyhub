@@ -111,9 +111,9 @@ impl PhasePlanPlugin {
 
 impl Plugin for PhasePlanPlugin {
     const NAME: &'static str = "PhasePlan";
-    const VENDOR: &'static str = "the SKY collective";
-    const URL: &'static str = "https://ranchsamples.dev";
-    const EMAIL: &'static str = "noreply@ranchsamples.dev";
+    const VENDOR: &'static str = "the SkyCollective";
+    const URL: &'static str = "https://skyhub.dev";
+    const EMAIL: &'static str = "noreply@skyhub.dev";
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[AudioIOLayout {
@@ -184,7 +184,7 @@ impl Plugin for PhasePlanPlugin {
 }
 
 impl ClapPlugin for PhasePlanPlugin {
-    const CLAP_ID: &'static str = "dev.ranchsamples.phaseplan";
+    const CLAP_ID: &'static str = "dev.skyhub.phaseplan";
     const CLAP_DESCRIPTION: Option<&'static str> =
         Some("Dual-wavetable subtractive synth with an open modulation matrix");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);

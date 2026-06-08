@@ -1,4 +1,4 @@
-/// RanchSamples desktop — Tauri v2 application library.
+/// SkyHub desktop — Tauri v2 application library.
 ///
 /// The entry point is `run()`, called from `main.rs`. Keeping the logic in a
 /// library crate lets us add integration tests later without duplicating the
@@ -33,5 +33,5 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_drag::init())
         .run(tauri::generate_context!())
-        .expect("error while running RanchSamples desktop app");
+        .expect("error while running SkyHub desktop app");
 }

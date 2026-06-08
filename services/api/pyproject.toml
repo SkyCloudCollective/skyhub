@@ -1,7 +1,7 @@
 [project]
-name = "ranchsamples-api"
+name = "skyhub-api"
 version = "0.1.0"
-description = "RanchSamples API — a single FastAPI service over the SQLite catalog."
+description = "SkyHub API — a single FastAPI service over the SQLite catalog."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.11,<3.13"

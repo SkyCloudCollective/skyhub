@@ -1,6 +1,6 @@
 # Architecture
 
-RanchSamples v2 is a monorepo with **one source of truth per concern**. This
+SkyHub v2 is a monorepo with **one source of truth per concern**. This
 document is the map; ADR-style decisions follow.
 
 ## Surfaces & data flow

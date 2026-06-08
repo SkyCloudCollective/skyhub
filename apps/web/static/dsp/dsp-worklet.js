@@ -1,4 +1,4 @@
-// RanchSamples studio — AudioWorkletProcessor hosting the wasm DSP.
+// SkyHub studio — AudioWorkletProcessor hosting the wasm DSP.
 //
 // This is a classic worklet script (no ES imports). The main thread compiles
 // the self-contained dsp_wasm.wasm and posts the WebAssembly.Module here; we

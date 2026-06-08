@@ -1,4 +1,4 @@
-# RanchSamples worker
+# SkyHub worker
 
 Audio analysis (BPM, key, timbre) + ingest into the catalog. Writes; the API
 only reads. Same SQLite DB + canonical schema as the API.

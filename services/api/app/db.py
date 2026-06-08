@@ -1,4 +1,4 @@
-"""db.py — SQLite access for the RanchSamples catalog.
+"""db.py — SQLite access for the SkyHub catalog.
 
 The schema is NOT defined here: it lives in db/schema.sql at the repo root (the
 canonical source of truth, shared with the worker and the migration runner).

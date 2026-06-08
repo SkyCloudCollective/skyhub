@@ -3,7 +3,7 @@
 #   git tag v0.1.0 && git push origin v0.1.0   →   a GitHub Release with:
 #     - the CLAP/VST3 plugin bundles (Linux, Windows, macOS-arm64) + SHA256SUMS
 #     - the desktop app: .AppImage + .deb (Linux) and .exe NSIS installer (Windows)
-#     - the RanchSamples container image pushed to GHCR
+#     - the SkyHub container image pushed to GHCR
 #
 # JAUNE (operator follow-ups, not wired here): code signing / notarization
 # (Apple + Windows certs), macOS desktop .dmg (needs a macOS runner + signing
@@ -33,9 +33,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: bash scripts/build-plugins-linux.sh --release
-      - run: cd dist && zip -r ../ranchsamples-plugins-linux-x86_64.zip linux-x86_64
+      - run: cd dist && zip -r ../skyhub-plugins-linux-x86_64.zip linux-x86_64
       - uses: actions/upload-artifact@v4
-        with: { name: plugins-linux, path: ranchsamples-plugins-linux-x86_64.zip }
+        with: { name: plugins-linux, path: skyhub-plugins-linux-x86_64.zip }
 
   plugins-windows:
     runs-on: ubuntu-latest
@@ -46,9 +46,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-xwin
       - run: bash scripts/build-plugins-windows.sh
-      - run: cd dist && zip -r ../ranchsamples-plugins-windows-x86_64.zip windows-x86_64
+      - run: cd dist && zip -r ../skyhub-plugins-windows-x86_64.zip windows-x86_64
       - uses: actions/upload-artifact@v4
-        with: { name: plugins-windows, path: ranchsamples-plugins-windows-x86_64.zip }
+        with: { name: plugins-windows, path: skyhub-plugins-windows-x86_64.zip }
 
   # Apple Silicon, unsigned. Intel + universal + notarization are operator follow-ups.
   plugins-macos:
@@ -63,9 +63,9 @@ jobs:
           cargo xtask bundle plugin-phaseplan --release
           mkdir -p dist/macos-arm64
           cp -R target/bundled/*.clap target/bundled/*.vst3 dist/macos-arm64/
-      - run: cd dist && zip -r ../ranchsamples-plugins-macos-arm64.zip macos-arm64
+      - run: cd dist && zip -r ../skyhub-plugins-macos-arm64.zip macos-arm64
       - uses: actions/upload-artifact@v4
-        with: { name: plugins-macos, path: ranchsamples-plugins-macos-arm64.zip }
+        with: { name: plugins-macos, path: skyhub-plugins-macos-arm64.zip }
 
   # ── Desktop app — Linux (.AppImage + .deb) ──────────────────────────────────
   #
@@ -73,7 +73,7 @@ jobs:
   # toolchain, and the required webkit2gtk / patchelf / AppImage system libs.
   # The web front-end is built first (pnpm build), then tauri builds the shell.
   #
-  # Outputs uploaded: RanchSamples_*.AppImage, RanchSamples_*_amd64.deb
+  # Outputs uploaded: SkyHub_*.AppImage, SkyHub_*_amd64.deb
   desktop-linux:
     runs-on: ubuntu-22.04
     steps:
@@ -109,7 +109,7 @@ jobs:
       # the generate step is idempotent.
       - name: Generate Tauri icons
         run: |
-          pnpm --filter @ranchsamples/web... exec true  # ensure workspace is set up
+          pnpm --filter @skyhub/web... exec true  # ensure workspace is set up
           npx @tauri-apps/cli icon docs/screenshots/library-light.png \
             --output crates/desktop/icons
 
@@ -188,8 +188,8 @@ jobs:
           file: Containerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/ranchsamples:latest
-            ghcr.io/${{ github.repository_owner }}/ranchsamples:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/skyhub:latest
+            ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}
 
   publish:
     needs:
@@ -226,11 +226,11 @@ jobs:
             out/*.exe
             out/SHA256SUMS
           body: |
-            RanchSamples ${{ github.ref_name }}
+            SkyHub ${{ github.ref_name }}
 
             **Plugins** (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
             **Desktop app**: Linux AppImage + deb, Windows NSIS installer (unsigned).
-            **Container image**: `ghcr.io/${{ github.repository_owner }}/ranchsamples:${{ github.ref_name }}`
+            **Container image**: `ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}`
 
             ---
 

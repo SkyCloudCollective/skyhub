@@ -14,7 +14,7 @@
 #                       the host alias from ~/.ssh/config.  NEVER hard-coded.
 #
 # Optional env vars:
-#   RS_MAC_REPO_PATH  — where to clone/pull on the Mac (default: ~/ranchsamples-v2)
+#   RS_MAC_REPO_PATH  — where to clone/pull on the Mac (default: ~/skyhub-v2)
 #   RS_MAC_SSH_PORT   — SSH port (default: 22)
 #   RS_REMOTE_REF     — git ref to build (default: HEAD of current branch)
 #
@@ -31,7 +31,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 : "${RS_MAC_SSH_HOST:?RS_MAC_SSH_HOST must be set (e.g. user@macbook.local)}"
-REPO_PATH="${RS_MAC_REPO_PATH:-~/ranchsamples-v2}"
+REPO_PATH="${RS_MAC_REPO_PATH:-~/skyhub-v2}"
 SSH_PORT="${RS_MAC_SSH_PORT:-22}"
 
 # Determine the git remote URL from the local clone.

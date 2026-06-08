@@ -1,14 +1,14 @@
 <script lang="ts">
-	// A calm, static identity page for the SKY collective. No data fetch.
+	// A calm, static identity page for the SkyCollective. No data fetch.
 </script>
 
 <article class="about">
 	<header class="glass hero">
 		<span class="mark" aria-hidden="true"></span>
-		<h1>The SKY collective</h1>
+		<h1>The SkyCollective</h1>
 		<p class="lead">
 			A small community of musicians and builders sharing samples, instruments, and
-			projects. RanchSamples is our platform — community-owned, self-hostable, and free.
+			projects. SkyHub is our platform — community-owned, self-hostable, and free.
 		</p>
 	</header>
 

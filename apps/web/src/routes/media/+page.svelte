@@ -16,7 +16,7 @@
 	});
 </script>
 
-<svelte:head><title>{$t('media.title')} · RanchSamples</title></svelte:head>
+<svelte:head><title>{$t('media.title')} · SkyHub</title></svelte:head>
 
 <section class="head glass-2">
 	<h1>{$t('media.title')}</h1>

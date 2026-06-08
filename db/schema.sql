@@ -1,5 +1,5 @@
 -- ============================================================================
--- RanchSamples — canonical SQLite schema (v2).
+-- SkyHub — canonical SQLite schema (v2).
 --
 -- Single source of truth for the catalog AND the community layer. The API
 -- (services/api) and the worker (services/worker) both read this. Categories

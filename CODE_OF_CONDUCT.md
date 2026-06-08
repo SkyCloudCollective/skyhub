@@ -1,6 +1,6 @@
 # Code of Conduct
 
-The SKY collective is a place to make music and build tools together. It only works
+The SkyCollective is a place to make music and build tools together. It only works
 if it's safe and welcoming for everyone.
 
 ## Our pledge

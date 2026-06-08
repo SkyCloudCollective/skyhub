@@ -1,7 +1,7 @@
 /* ==========================================================================
-   RanchSamples theme for Jellyfin — Aero/Bauhaus/Liquid-Glass.
+   SkyHub theme for Jellyfin — Aero/Bauhaus/Liquid-Glass.
    Credit: structure inspired by community Jellyfin themes; original
-   RanchSamples tokens.
+   SkyHub tokens.
    Accessible by design: warm near-black (never #000), AA+ contrast,
    left-aligned, honours prefers-reduced-motion, no alarm-red status.
    ========================================================================== */
@@ -134,7 +134,7 @@ h1, h2, h3,
 /* --------------------------------------------------------------------------
    2) SKIN HEADER — Liquid Glass: warm-tinted translucent + blur + border.
    Warm undertone (#1a1714) layered under the white-alpha highlight so the
-   glass reads RanchSamples-warm, not cool/generic.
+   glass reads SkyHub-warm, not cool/generic.
    -------------------------------------------------------------------------- */
 .skinHeader,
 .skinHeader-blurred,
@@ -427,7 +427,7 @@ select.emby-select {
 /* --------------------------------------------------------------------------
    8) ACCENT — links, active tabs, checkboxes, sliders, spinners.
    Mostly Aero blue, with SPARSE secondary accents (coral / gold) and one
-   Bauhaus signal so the palette reads RanchSamples, not mono-blue.
+   Bauhaus signal so the palette reads SkyHub, not mono-blue.
    -------------------------------------------------------------------------- */
 a,
 .button-link,
@@ -500,7 +500,7 @@ progress.itemProgressBar::-webkit-progress-value,
   background-color: var(--rs-accent) !important;
 }
 
-/* SPARSE secondary accents — give the palette its RanchSamples richness:
+/* SPARSE secondary accents — give the palette its SkyHub richness:
    resume/in-progress = gold; (kept minimal, one purposeful use each). */
 .itemProgressBar,
 .itemLinearProgress .itemLinearProgressBar.itemLinearProgressBar-resume {

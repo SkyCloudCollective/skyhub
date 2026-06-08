@@ -1,7 +1,7 @@
 import type { Dict } from './en';
 
 export const fr: Dict = {
-	'app.name': 'RanchSamples',
+	'app.name': 'SkyHub',
 	'app.tagline': 'Une bibliothèque de samples possédée par la communauté.',
 	'nav.library': 'Bibliothèque',
 	'nav.studio': 'Studio',

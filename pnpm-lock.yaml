@@ -10,7 +10,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@ranchsamples/tokens':
+      '@skyhub/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
     devDependencies:

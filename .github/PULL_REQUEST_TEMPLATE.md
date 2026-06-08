@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to RanchSamples. Keep it small and focused where you can. -->
+<!-- Thanks for contributing to SkyHub. Keep it small and focused where you can. -->
 
 **What this changes**
 A short description, and the why.

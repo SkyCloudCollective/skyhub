@@ -25,7 +25,7 @@ def test_gate_blocks_without_creds(client, monkeypatch):
     monkeypatch.setenv("RS_BASIC_AUTH", "scout:letmein")
     r = client.get("/v1/me")
     assert r.status_code == 401
-    assert r.headers.get("www-authenticate") == 'Basic realm="RanchSamples"'
+    assert r.headers.get("www-authenticate") == 'Basic realm="SkyHub"'
 
 
 def test_gate_allows_with_creds(client, monkeypatch):

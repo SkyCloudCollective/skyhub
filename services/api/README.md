@@ -1,4 +1,4 @@
-# RanchSamples API
+# SkyHub API
 
 A single FastAPI service over the SQLite catalog. Replaces the v1 dual server
 (stdlib + FastAPI kept in lockstep) — one implementation, OpenAPI docs for free.
@@ -33,7 +33,7 @@ uv run pytest
 - `RS_ADMIN_HANDLES` — comma-separated admin handles.
 - `RS_OPEN_UGC` — truthy to allow `open` (public) project collaboration (off until the legal pass).
 - `RS_BASIC_AUTH` — `"user:password"`. When set, a coarse HTTP Basic gate protects
-  **every** route except `/healthz` (401 + `WWW-Authenticate: Basic realm="RanchSamples"`,
+  **every** route except `/healthz` (401 + `WWW-Authenticate: Basic realm="SkyHub"`,
   constant-time compare). Unset = no gate (tests/local untouched). It's the only consumer of
   the `Authorization` header; per-member identity rides on the `X-RS-Handle` header, which the
   web client sends and which takes priority in `acting()` — so the gate and identity never

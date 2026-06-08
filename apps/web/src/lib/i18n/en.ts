@@ -1,5 +1,5 @@
 export const en = {
-	'app.name': 'RanchSamples',
+	'app.name': 'SkyHub',
 	'app.tagline': 'A community-owned sample library.',
 	'nav.library': 'Library',
 	'nav.studio': 'Studio',

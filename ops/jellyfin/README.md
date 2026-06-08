@@ -1,6 +1,6 @@
-# RanchSamples theme for Jellyfin
+# SkyHub theme for Jellyfin
 
-`ranchsamples-theme.css` re-skins a Jellyfin 10.x web UI into the RanchSamples
+`skyhub-theme.css` re-skins a Jellyfin 10.x web UI into the SkyHub
 look (Bauhaus · Liquid Glass · Aero · warm near-black) so a self-hosted media
 server matches the rest of the hub. It targets the dark UI + the login screen,
 and is written to be **safe** — it restyles, it never hides a working control.

@@ -1,4 +1,4 @@
-"""main.py — the single RanchSamples API (FastAPI).
+"""main.py — the single SkyHub API (FastAPI).
 
 Replaces the v1 dual server (stdlib serve.py + FastAPI app.py kept in lockstep).
 One implementation, OpenAPI docs for free, the same /v1 surface. Read endpoints
@@ -33,7 +33,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="RanchSamples API",
+    title="SkyHub API",
     version=__version__,
     description="Community-owned audio-samples platform.",
     lifespan=lifespan,
@@ -88,7 +88,7 @@ async def basic_auth_gate(request: Request, call_next):
     return Response(
         status_code=401,
         content="Authentication required.",
-        headers={"WWW-Authenticate": 'Basic realm="RanchSamples"'},
+        headers={"WWW-Authenticate": 'Basic realm="SkyHub"'},
     )
 
 
@@ -129,7 +129,7 @@ def acting(
 # ── discovery ────────────────────────────────────────────────────────────────
 @app.get("/v1/health")
 def health():
-    return {"status": "ok", "service": "ranchsamples-api", "version": __version__}
+    return {"status": "ok", "service": "skyhub-api", "version": __version__}
 
 
 @app.get("/v1/me")

@@ -1,6 +1,6 @@
 # Governance
 
-RanchSamples is the platform of **the SKY collective** — a small community of
+SkyHub is the platform of **the SkyCollective** — a small community of
 musicians and builders who share samples, instruments, and projects. This file
 describes how the project is steered. It is intentionally light: enough structure
 to be legible and fair, not so much that it gets in the way of making music.

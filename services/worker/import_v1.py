@@ -1,4 +1,4 @@
-"""import_v1.py — import a prior RanchSamples catalog into this one.
+"""import_v1.py — import a prior SkyHub catalog into this one.
 
 A prior catalog carries curated metadata the analyser cannot re-derive:
 category / kind / instrument / musical key, and the human + system tags that

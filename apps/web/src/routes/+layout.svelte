@@ -1,5 +1,5 @@
 <script lang="ts">
-	import '@ranchsamples/tokens'; // design system: tokens + glass skin + base reset
+	import '@skyhub/tokens'; // design system: tokens + glass skin + base reset
 	import favicon from '$lib/assets/favicon.svg';
 	import { theme } from '$lib/theme'; // subscribing applies data-theme to <html>
 	import Topbar from '$lib/components/Topbar.svelte';
@@ -25,7 +25,7 @@
 <footer>
 	<hr class="bauhaus-rule" />
 	<p class="muted">
-		<a href="/about">RanchSamples — the SKY collective</a> · community-owned · AGPL-3.0 ·
+		<a href="/about">SkyHub — the SkyCollective</a> · community-owned · AGPL-3.0 ·
 		sound design by Tev · meters by polarity
 	</p>
 </footer>

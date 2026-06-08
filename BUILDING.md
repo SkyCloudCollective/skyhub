@@ -1,4 +1,4 @@
-# Building RanchSamples
+# Building SkyHub
 
 TL;DR — one command per platform:
 
@@ -112,7 +112,7 @@ RS_MAC_SSH_HOST=youruser@your-mac-hostname bash scripts/build-mac-remote.sh
 ```
 
 Optional variables:
-- `RS_MAC_REPO_PATH` — path on the Mac where the repo is cloned (default: `~/ranchsamples-v2`)
+- `RS_MAC_REPO_PATH` — path on the Mac where the repo is cloned (default: `~/skyhub-v2`)
 - `RS_MAC_SSH_PORT` — SSH port (default: 22)
 - `RS_REMOTE_REF` — git branch or tag to build (default: current branch)
 
@@ -224,10 +224,10 @@ just build-desktop
 ```
 
 Outputs:
-- Linux:   `target/release/bundle/appimage/RanchSamples_*.AppImage`
-           `target/release/bundle/deb/RanchSamples_*_amd64.deb`
-- Windows: `target/release/bundle/nsis/RanchSamples_*-setup.exe`
-- macOS:   `target/release/bundle/macos/RanchSamples.app` (best-effort)
+- Linux:   `target/release/bundle/appimage/SkyHub_*.AppImage`
+           `target/release/bundle/deb/SkyHub_*_amd64.deb`
+- Windows: `target/release/bundle/nsis/SkyHub_*-setup.exe`
+- macOS:   `target/release/bundle/macos/SkyHub.app` (best-effort)
 
 ### Drag-to-DAW
 

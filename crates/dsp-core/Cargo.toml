@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 description = "Real-time-safe DSP primitives shared by the web (wasm) and the native plugins."
-repository = "https://github.com/SKY-collective/ranchsamples"
+repository = "https://github.com/SKY-collective/skyhub"
 
 [lib]
 crate-type = ["rlib"]

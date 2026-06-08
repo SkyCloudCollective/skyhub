@@ -7,7 +7,7 @@ def test_health(client):
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "ok"
-    assert body["service"] == "ranchsamples-api"
+    assert body["service"] == "skyhub-api"
 
 
 def test_me_dev_mode_is_open(client):

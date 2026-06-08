@@ -12,7 +12,7 @@ your-host.example {
 
 	# Everything else → the prebuilt static SPA (apps/web/build).
 	handle {
-		root * /srv/ranchsamples/web
+		root * /srv/skyhub/web
 		try_files {path} /index.html      # SPA fallback
 		file_server
 	}

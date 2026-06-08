@@ -1,5 +1,5 @@
 /* ============================================================================
-   RanchSamples design tokens — Bauhaus · Liquid Glass · Aero
+   SkyHub design tokens — Bauhaus · Liquid Glass · Aero
    ----------------------------------------------------------------------------
    ONE token layer drives the whole UI. Components consume the *semantic* tokens
    (--bg, --surface, --fg, --accent, --glass-*); they never hard-code a colour.

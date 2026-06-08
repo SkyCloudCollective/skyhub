@@ -17,7 +17,10 @@ members = [
     "crates/plugin-botanica",
     "crates/xtask",
     # added as each crate lands (keeps `cargo check` green meanwhile):
-    # "crates/desktop",
+    # Desktop Tauri app — intentionally excluded from `cargo clippy/test
+    # --workspace` in ci.yml (requires webkit2gtk / WebView2 system deps).
+    # The dedicated desktop-* CI jobs handle it via `cargo tauri build`.
+    "crates/desktop",
 ]
 
 [workspace.package]

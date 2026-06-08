@@ -66,6 +66,19 @@ bundle-all:
 bundle-mac:
     bash scripts/build-mac-remote.sh
 
+# ── desktop app ─────────────────────────────────────────────────────────────
+# Build the Tauri desktop app for the current host OS.
+# Requires: pnpm, @tauri-apps/cli (npx auto-fetches it), webkit2gtk-4.1 (Linux).
+# The web front-end is built first; tauri.conf.json's beforeBuildCommand is a
+# fallback — running it explicitly here makes the step visible in local builds.
+build-desktop: build-web
+    cargo tauri build --project-path crates/desktop
+
+# Dev mode: hot-reloading web (SvelteKit) + Tauri window.
+# Runs the SvelteKit dev server; tauri.conf.json's beforeDevCommand handles it.
+dev-desktop:
+    cargo tauri dev --project-path crates/desktop
+
 # ── quality gates ─────────────────────────────────────────────────────────────
 fmt:
     cargo fmt --all

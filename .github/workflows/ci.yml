@@ -21,8 +21,11 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace -- -D warnings
-      - run: cargo test --workspace
+      # Exclude `desktop`: it needs webkit2gtk / WebView2 system libs not on this
+      # runner. The desktop-linux / desktop-windows jobs in release.yml build and
+      # verify it (via tauri-action) on a `v*` tag — that's its first real build.
+      - run: cargo clippy --workspace --exclude desktop -- -D warnings
+      - run: cargo test --workspace --exclude desktop
 
   # ── Native plugins: build the CLAP/VST3 bundles.
   #

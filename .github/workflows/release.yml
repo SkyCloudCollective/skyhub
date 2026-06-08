@@ -2,12 +2,18 @@
 #
 #   git tag v0.1.0 && git push origin v0.1.0   →   a GitHub Release with:
 #     - the CLAP/VST3 plugin bundles (Linux, Windows, macOS-arm64) + SHA256SUMS
-#     - the SkyHub container image pushed to GHCR (ghcr.io/<owner>/skyhub)
+#     - the desktop app: .AppImage + .deb (Linux) and .exe NSIS installer (Windows)
+#     - the RanchSamples container image pushed to GHCR
 #
 # JAUNE (operator follow-ups, not wired here): code signing / notarization
-# (Apple + Windows certs), Intel + universal macOS, the desktop .exe/.dmg and
-# the Android/iOS apps (need the Tauri shell + signing identities), and the
+# (Apple + Windows certs), macOS desktop .dmg (needs a macOS runner + signing
+# identity), Intel + universal macOS plugin bundles, Android/iOS apps.
 # Forgejo registry mirror (needs an act_runner + registry secrets).
+#
+# Unsigned artefact caveats:
+#   Linux:   AppImage / deb — no OS gating, loads fine.
+#   Windows: SmartScreen warns on the NSIS .exe. Right-click → "Run anyway".
+#   macOS:   Gatekeeper blocks unsigned binaries. Right-click bundle → Open.
 name: release
 
 on:
@@ -27,9 +33,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: bash scripts/build-plugins-linux.sh --release
-      - run: cd dist && zip -r ../skyhub-plugins-linux-x86_64.zip linux-x86_64
+      - run: cd dist && zip -r ../ranchsamples-plugins-linux-x86_64.zip linux-x86_64
       - uses: actions/upload-artifact@v4
-        with: { name: linux, path: skyhub-plugins-linux-x86_64.zip }
+        with: { name: plugins-linux, path: ranchsamples-plugins-linux-x86_64.zip }
 
   plugins-windows:
     runs-on: ubuntu-latest
@@ -40,9 +46,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo install cargo-xwin
       - run: bash scripts/build-plugins-windows.sh
-      - run: cd dist && zip -r ../skyhub-plugins-windows-x86_64.zip windows-x86_64
+      - run: cd dist && zip -r ../ranchsamples-plugins-windows-x86_64.zip windows-x86_64
       - uses: actions/upload-artifact@v4
-        with: { name: windows, path: skyhub-plugins-windows-x86_64.zip }
+        with: { name: plugins-windows, path: ranchsamples-plugins-windows-x86_64.zip }
 
   # Apple Silicon, unsigned. Intel + universal + notarization are operator follow-ups.
   plugins-macos:
@@ -57,9 +63,114 @@ jobs:
           cargo xtask bundle plugin-phaseplan --release
           mkdir -p dist/macos-arm64
           cp -R target/bundled/*.clap target/bundled/*.vst3 dist/macos-arm64/
-      - run: cd dist && zip -r ../skyhub-plugins-macos-arm64.zip macos-arm64
+      - run: cd dist && zip -r ../ranchsamples-plugins-macos-arm64.zip macos-arm64
       - uses: actions/upload-artifact@v4
-        with: { name: macos, path: skyhub-plugins-macos-arm64.zip }
+        with: { name: plugins-macos, path: ranchsamples-plugins-macos-arm64.zip }
+
+  # ── Desktop app — Linux (.AppImage + .deb) ──────────────────────────────────
+  #
+  # Uses the official tauri-action which installs @tauri-apps/cli, the Rust
+  # toolchain, and the required webkit2gtk / patchelf / AppImage system libs.
+  # The web front-end is built first (pnpm build), then tauri builds the shell.
+  #
+  # Outputs uploaded: RanchSamples_*.AppImage, RanchSamples_*_amd64.deb
+  desktop-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      # webkit2gtk-4.1 and libappindicator are required by Tauri on Linux.
+      # The ubuntu-22.04 runner has apt available; 24.04 ships webkit2gtk-4.1 natively.
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Generate placeholder icons from the existing screenshot.
+      # A real branded icon can replace docs/screenshots/library-light.png later;
+      # the generate step is idempotent.
+      - name: Generate Tauri icons
+        run: |
+          pnpm --filter @ranchsamples/web... exec true  # ensure workspace is set up
+          npx @tauri-apps/cli icon docs/screenshots/library-light.png \
+            --output crates/desktop/icons
+
+      # Build the SvelteKit static site first (beforeBuildCommand in tauri.conf.json
+      # would also do this, but running it explicitly here makes the step visible).
+      - name: Build web front-end
+        working-directory: apps/web
+        run: pnpm build
+
+      # tauri-action drives `cargo tauri build` with the right env vars and
+      # uploads the produced bundles as GitHub artifacts.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/desktop
+          # We built the web ourselves above; skip the beforeBuildCommand.
+          args: --bundles appimage,deb
+          uploadArtifacts: true
+          artifactName: desktop-linux-${{ github.ref_name }}
+
+  # ── Desktop app — Windows (.exe NSIS installer) ─────────────────────────────
+  #
+  # tauri-action on windows-latest provides WebView2 (ships with Windows 10/11).
+  # The resulting NSIS installer is unsigned — SmartScreen will warn.
+  # For a signed build, set TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+  # in GitHub Actions secrets (operator follow-up, not wired here).
+  desktop-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Tauri icons
+        run: npx @tauri-apps/cli icon docs/screenshots/library-light.png --output crates/desktop/icons
+
+      - name: Build web front-end
+        working-directory: apps/web
+        run: pnpm build
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: crates/desktop
+          args: --bundles nsis
+          uploadArtifacts: true
+          artifactName: desktop-windows-${{ github.ref_name }}
 
   container:
     runs-on: ubuntu-latest
@@ -77,30 +188,57 @@ jobs:
           file: Containerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/skyhub:latest
-            ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}
+            ghcr.io/${{ github.repository_owner }}/ranchsamples:latest
+            ghcr.io/${{ github.repository_owner }}/ranchsamples:${{ github.ref_name }}
 
   publish:
-    needs: [plugins-linux, plugins-windows, plugins-macos, container]
+    needs:
+      - plugins-linux
+      - plugins-windows
+      - plugins-macos
+      - desktop-linux
+      - desktop-windows
+      - container
+    # Run even if macos plugins or an individual desktop job fails (unsigned
+    # builds are best-effort; we publish whatever succeeded).
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with: { path: artifacts }
-      - run: |
-          mkdir -p out && find artifacts -name '*.zip' -exec cp {} out/ \;
-          cd out && sha256sum *.zip > SHA256SUMS && cat SHA256SUMS
+      - name: Collect zips + compute SHA256SUMS
+        run: |
+          mkdir -p out
+          find artifacts -name '*.zip' -exec cp {} out/ \;
+          # Also collect the .AppImage, .deb and .exe produced by tauri-action
+          find artifacts -name '*.AppImage' -exec cp {} out/ \;
+          find artifacts -name '*.deb'      -exec cp {} out/ \;
+          find artifacts -name '*.exe'      -exec cp {} out/ \;
+          cd out
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             out/*.zip
+            out/*.AppImage
+            out/*.deb
+            out/*.exe
             out/SHA256SUMS
           body: |
-            SkyHub ${{ github.ref_name }}
+            RanchSamples ${{ github.ref_name }}
 
-            Plugins (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
-            Container image: `ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}`.
+            **Plugins** (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
+            **Desktop app**: Linux AppImage + deb, Windows NSIS installer (unsigned).
+            **Container image**: `ghcr.io/${{ github.repository_owner }}/ranchsamples:${{ github.ref_name }}`
 
-            macOS bundles are unsigned for now — right-click → Open, or remove the
-            quarantine attribute. Intel/universal + notarization + the desktop and
-            mobile apps are on the roadmap.
+            ---
+
+            **Unsigned build caveats**
+
+            - Linux: no OS gating — load `.clap`/`.vst3` from `~/.clap/` / `~/.vst3/`.
+            - Windows: SmartScreen warns on first run. Right-click the `.exe` → "Run anyway".
+            - macOS plugin bundles: Gatekeeper blocks them. Right-click in Finder → Open → Open.
+
+            Code signing (Apple Developer ID, Windows Authenticode) is a planned
+            operator follow-up and is not automated in this build.

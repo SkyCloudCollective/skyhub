@@ -1,0 +1,24 @@
+[package]
+name = "desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "RanchSamples desktop app — Tauri v2 shell around the SvelteKit web UI with native drag-to-DAW."
+
+# Binary only; this crate is NOT pulled in by `cargo xtask bundle` (which only
+# works on plugin-* crates via nih_plug_xtask). The workspace member declaration
+# is intentional — it shares Cargo.lock and workspace metadata — but see ci.yml
+# for why the desktop-specific build job excludes it from `cargo clippy --workspace`.
+[[bin]]
+name = "ranchsamples"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-drag = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

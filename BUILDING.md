@@ -178,14 +178,80 @@ Exit 0 = clean. Exit 1 = something internal leaked into an artifact.
 
 ## Tauri desktop app
 
-The `crates/desktop` crate is scaffolded but not yet wired into the workspace
-(the `Cargo.toml` member line is commented out). When it lands:
+`crates/desktop` is now an active workspace member. It wraps the SvelteKit
+`apps/web/` build in a Tauri v2 shell with native drag-to-DAW support via
+`tauri-plugin-drag`.
 
-- Linux/Windows: `cargo tauri build` (requires `npm`/`pnpm` for the front-end).
-- macOS: same remote-Mac flow as the plugins.
-- Cross-compilation for Tauri is not supported upstream; each OS must build
-  its own native binary.
+### Prerequisites
 
-No sudo is needed for the Tauri build itself. The AppImage/deb/rpm/msi
-packager steps may need system packages — those will be documented when the
-desktop crate is activated.
+In addition to Rust (stable) and pnpm/Node 22:
+
+**Linux**
+```
+sudo apt-get install -y \
+  libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+```
+(Ubuntu 22.04+ / Debian Bookworm. Fedora: `webkit2gtk4.1-devel` etc.)
+
+**Windows** — WebView2 ships with Windows 10/11; no extra install needed.
+
+**macOS** — Xcode Command Line Tools (best-effort, not required for Linux/Windows CI).
+
+### Icon generation (one-time, per checkout)
+
+Icons are not committed to git. Generate them from the existing screenshot:
+```
+npx @tauri-apps/cli icon docs/screenshots/library-light.png \
+  --output crates/desktop/icons
+```
+This produces `32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.ico`, `icon.icns`
+inside `crates/desktop/icons/`. Replace the screenshot with a proper branded
+1024×1024 source when available.
+
+### Local build
+
+```
+# Build the web front-end first:
+cd apps/web && pnpm build && cd ../..
+
+# Then build the Tauri app for the current OS:
+cargo tauri build --project-path crates/desktop
+```
+
+Or with `just`:
+```
+just build-desktop
+```
+
+Outputs:
+- Linux:   `target/release/bundle/appimage/RanchSamples_*.AppImage`
+           `target/release/bundle/deb/RanchSamples_*_amd64.deb`
+- Windows: `target/release/bundle/nsis/RanchSamples_*-setup.exe`
+- macOS:   `target/release/bundle/macos/RanchSamples.app` (best-effort)
+
+### Drag-to-DAW
+
+The desktop shell integrates `tauri-plugin-drag` so that the SvelteKit front-end
+can initiate a native OS drag session from a sample card directly into a DAW.
+From the web layer, invoke:
+
+```js
+import { invoke } from "@tauri-apps/api/core";
+await invoke("plugin:drag|drag_files", {
+  items: [{ path: "/absolute/path/to/sample.wav", icon: null }],
+  image: null,
+});
+```
+
+Tauri's built-in drag-drop interception is disabled (`"dragDropEnabled": false`
+in `tauri.conf.json`) so that outbound plugin-drag is not interfered with.
+
+### Unsigned build caveats (JAUNE)
+
+- **Linux**: no OS gating.
+- **Windows**: SmartScreen warns on unsigned `.exe`. Right-click → "Run anyway".
+- **macOS**: Gatekeeper blocks unsigned `.app`. Right-click → Open → Open.
+
+Code signing (Apple Developer ID + `MAC_SIGN_ID`, Windows Authenticode +
+`TAURI_SIGNING_PRIVATE_KEY`) is a planned operator follow-up. The keys are
+Marwan's and are never stored in this repository.

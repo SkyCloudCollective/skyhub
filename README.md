@@ -77,6 +77,27 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 > planned for more native targets — a **Max for Live** device (Max external over the
 > core's C ABI) alongside the existing VST3/CLAP and WebAssembly builds.
 
+## Community — owned by the SkyCloudCollective
+
+SkyHub is **community-owned and operator-curated** — the platform of the **SkyCloudCollective**,
+a small community of musicians and builders. The collaboration lives *in the product*, not bolted on:
+
+- **The Board** (`/board`) — members **propose** ideas and **upvote** them (one vote each); the
+  board sorts by support and the roadmap is public. *Consultative democracy*: upvotes inform, the
+  operator curates ([`GOVERNANCE.md`](GOVERNANCE.md)).
+- **Projects — a "GitHub of music"** (`/projects`) — collaborate on a body of work: **roles**
+  (owner / editor / viewer), consented in-app **invitations**, a **files** index, an **activity log**
+  ("git log"), and threaded **comments**.
+- **Members & channels** (`/members`, `/u/<handle>`) — a profile per member (bio, avatar, links)
+  with their own **channel** of contributions; **follow** the people whose work you like.
+- **Tube — the video wall** (`/tube`) — members post videos with **comments** and **reactions**.
+- **Crates** (`/crate`) — gather samples into shareable collections, drag-to-build.
+- **One identity** — sign in once; the same account works across the collective's self-hosted services.
+
+Be good to each other ([`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)); here's how to
+[contribute](CONTRIBUTING.md). Open (public) contribution is gated in code (`RS_OPEN_UGC`) until a
+consent/legal review — **private and unlisted collaboration are always on**.
+
 ## Principles
 
 - **One source of truth.** The DSP is one Rust core, not a JS copy and a Rust copy. The
@@ -119,20 +140,6 @@ The whole platform is one FastAPI process over a single SQLite file + a prebuilt
 static web app — no SaaS, no database server, no Node runtime in production. A
 minimal instance is one command; a production instance is Caddy + uvicorn on one
 origin. See [`SELFHOST.md`](SELFHOST.md).
-
-## The SkyCloudCollective
-
-SkyHub is the platform of **the SkyCloudCollective** — a small community of musicians
-and builders. It's community-owned and operator-curated: members propose and upvote on
-the in-app **Board** (`/board`), and a maintainer keeps the project coherent and curates
-the public roadmap.
-
-- [`GOVERNANCE.md`](GOVERNANCE.md) — how decisions are made (consultative democracy).
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to set up and send a change.
-- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — how we treat each other.
-
-Public (open) collaboration is gated off in code (`RS_OPEN_UGC`) until a consent/legal
-review is complete; private and unlisted collaboration are always available.
 
 ## License & credits
 

@@ -106,7 +106,7 @@ export const PHASEPLAN_GROUPS: Group[] = [
 	}
 ];
 
-export const BOTANICA_GROUPS: Group[] = [
+export const MORPH_GROUPS: Group[] = [
 	{
 		title: 'Character',
 		ctls: [

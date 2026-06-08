@@ -1,4 +1,4 @@
-//! Botanica — a granular sample-morph instrument.
+//! Morph — a granular sample-morph instrument.
 //!
 //! Inspired by Synplant; sound design by **Tev**. Original implementation. Built
 //! entirely on `dsp-core`, so the web (wasm) build and the native plugin run the
@@ -26,7 +26,7 @@ use voice_characters::{blend, eff_macros, CharacterFilter};
 
 /// User-facing parameters. Macros are normalised 0..1 unless noted.
 #[derive(Clone, Copy, Debug)]
-pub struct BotanicaParams {
+pub struct MorphParams {
     pub blend: f32,           // tone/drive blend
     pub intensity: f32,       // energy knob (blended with the XY orb)
     pub bloom: f32,           // brightness/reverb knob (blended with the orb)
@@ -55,7 +55,7 @@ pub struct BotanicaParams {
     pub spark_rate: f32, // Hz free-running pluck rate (the "constant" pollen)
 }
 
-impl Default for BotanicaParams {
+impl Default for MorphParams {
     fn default() -> Self {
         Self {
             blend: 0.4,
@@ -79,7 +79,7 @@ impl Default for BotanicaParams {
             strings_air: 0.4,
             strings_density: 0.4,
             strings_tone: 0.5,
-            spark_on: 1.0,   // on by default — it is Botanica's signature shimmer
+            spark_on: 1.0,   // on by default — it is Morph's signature shimmer
             spark_rate: 2.4, // Hz; v1's pollen sat ~0.2..5 Hz
         }
     }
@@ -93,7 +93,7 @@ const ROOT_REFERENCE_MIDI: f32 = 48.0;
 /// played root: a major scale (root, 2, 4, 5, 7, 9, 11). Bit i = semitone i.
 const MAJOR_KEY_MASK: u16 = 0b1010_1101_0101;
 
-/// Last-note-priority held-note stack. Botanica is a single morphing texture,
+/// Last-note-priority held-note stack. Morph is a single morphing texture,
 /// not a polyphonic sampler, so playing it is *mono*: the most-recently pressed
 /// (and still-held) note steers the whole instrument's pitch + key. A fixed
 /// array (never allocates) tracks the held order; releasing the top note falls
@@ -209,13 +209,13 @@ pub struct Engine {
     note_semis_s: Smoothed, // smoothed played-note transpose (no pitch zipper)
     root_midi: f32,         // last-played root the generative layers key to
     note_vel: f32,          // velocity of the active note (drives intensity bias)
-    params: BotanicaParams,
+    params: MorphParams,
 }
 
 impl Engine {
     pub fn new(sample_rate: f32) -> Self {
         let sr = sample_rate.max(1.0);
-        let p = BotanicaParams::default();
+        let p = MorphParams::default();
         let mut e = Self {
             sample_rate: sr,
             voice: SampleVoice::default(),
@@ -329,7 +329,7 @@ impl Engine {
         self.root_midi - ROOT_REFERENCE_MIDI
     }
 
-    pub fn set_params(&mut self, p: BotanicaParams) {
+    pub fn set_params(&mut self, p: MorphParams) {
         self.params = p;
         // freeze edge: capture a window on the rising edge (off the audio thread)
         let now = p.freeze >= 0.5;
@@ -402,7 +402,7 @@ impl Engine {
 
         // voice → character filter. The loop transposes with the note; the
         // built-in fallback tone is likewise playable (110 Hz at the reference
-        // note), so Botanica responds to the keyboard with or without a sample.
+        // note), so Morph responds to the keyboard with or without a sample.
         let dry = if self.voice.loaded() {
             self.voice.next(self.sample_rate, hold, ratio)
         } else {
@@ -559,9 +559,9 @@ mod tests {
         let render = |level: f32| {
             let mut e = Engine::new(48_000.0);
             e.set_sample(sample.clone(), 48_000.0);
-            e.set_params(BotanicaParams {
+            e.set_params(MorphParams {
                 strings_level: level,
-                ..BotanicaParams::default()
+                ..MorphParams::default()
             });
             let mut buf = vec![0.0; 96_000];
             e.process(&mut buf);
@@ -591,9 +591,9 @@ mod tests {
         let mut e = Engine::new(48_000.0);
         let sample: Vec<f32> = (0..1000).map(|i| (i as f32 / 1000.0) * 2.0 - 1.0).collect();
         e.set_sample(sample, 48_000.0);
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             freeze: 1.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         // run a bit so the smoothed puck settles, then sample the held position
         for _ in 0..2000 {
@@ -615,18 +615,18 @@ mod tests {
         let sample: Vec<f32> = (0..1000).map(|i| (i as f32 / 1000.0)).collect();
         e.set_sample(sample.clone(), 48_000.0);
         // +12 semitones => ~2x speed => position advances ~2x further
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             retune_semis: 12.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         for _ in 0..400 {
             e.next();
         }
         let fast = e.voice.pos;
         e.set_sample(sample, 48_000.0);
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             retune_semis: 0.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         for _ in 0..400 {
             e.next();
@@ -644,7 +644,7 @@ mod tests {
         // crank the spark, let it ring, flip it off and assert the per-sample
         // delta never jumps full-scale across the transition.
         let mut e = Engine::new(48_000.0);
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             spark_on: 1.0,
             arp_amount: 1.0,
             arp_density: 1.0,
@@ -653,13 +653,13 @@ mod tests {
             bloom: 0.0,
             resonance: 0.0,
             strings_level: 0.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         for _ in 0..24_000 {
             e.next();
         }
         // Flip spark off mid-ring and capture the transition.
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             spark_on: 0.0,
             arp_amount: 1.0,
             arp_density: 1.0,
@@ -667,7 +667,7 @@ mod tests {
             bloom: 0.0,
             resonance: 0.0,
             strings_level: 0.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         let mut prev = e.next();
         let mut max_delta = 0.0f32;
@@ -689,7 +689,7 @@ mod tests {
         // (the layer is actually gated, not just renamed).
         let render = |on: f32| {
             let mut e = Engine::new(48_000.0);
-            e.set_params(BotanicaParams {
+            e.set_params(MorphParams {
                 spark_on: on,
                 arp_amount: 1.0,
                 arp_density: 1.0,
@@ -697,7 +697,7 @@ mod tests {
                 bloom: 0.0,
                 resonance: 0.0,
                 strings_level: 0.0,
-                ..BotanicaParams::default()
+                ..MorphParams::default()
             });
             let mut buf = vec![0.0; 96_000];
             e.process(&mut buf);
@@ -806,19 +806,19 @@ mod tests {
     #[test]
     fn xy_selects_a_character() {
         let mut e = Engine::new(48_000.0);
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             xy_x: 1.0,
             xy_y: 0.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         for _ in 0..1000 {
             e.next();
         }
         let a = e.character_name();
-        e.set_params(BotanicaParams {
+        e.set_params(MorphParams {
             xy_x: -1.0,
             xy_y: 0.0,
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         });
         for _ in 0..1000 {
             e.next();

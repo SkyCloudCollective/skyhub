@@ -1,7 +1,7 @@
 //! `dsp-core` — real-time-safe DSP primitives.
 //!
 //! This crate is the ONE source of truth for signal processing. Instrument
-//! crates (`botanica`, `phaseplan`) build on it; the wasm bindings and the
+//! crates (`morph`, `phaseplan`) build on it; the wasm bindings and the
 //! `nih-plug` wrappers are thin and call into the same code, so the web studio
 //! and the native plugin run byte-identical DSP.
 //!

@@ -3,18 +3,18 @@
 // plain snapshot of the studio's parameter state, shareable by JSON export.
 //
 // A PresetState captures exactly what the studio holds: the per-id param record,
-// plus PhasePlan's mod-matrix routes OR Botanica's XY puck. `dice()` reads the
+// plus PhasePlan's mod-matrix routes OR Morph's XY puck. `dice()` reads the
 // control specs (params.ts) so a mutation always stays within each knob's range.
 import { browser } from '$app/environment';
 import type { Instrument, Route } from './engine';
-import { PHASEPLAN_GROUPS, BOTANICA_GROUPS, defaults, type Ctl, type Group } from './params';
+import { PHASEPLAN_GROUPS, MORPH_GROUPS, defaults, type Ctl, type Group } from './params';
 
 export type PresetState = {
 	instrument: Instrument;
 	version: number;
 	params: Record<number, number>;
 	routes?: Route[]; // PhasePlan
-	xy?: { x: number; y: number }; // Botanica
+	xy?: { x: number; y: number }; // Morph
 };
 
 export type NamedPreset = { name: string; state: PresetState };
@@ -22,7 +22,7 @@ export type NamedPreset = { name: string; state: PresetState };
 const VERSION = 1;
 
 function groupsFor(instrument: Instrument): Group[] {
-	return instrument === 'phaseplan' ? PHASEPLAN_GROUPS : BOTANICA_GROUPS;
+	return instrument === 'phaseplan' ? PHASEPLAN_GROUPS : MORPH_GROUPS;
 }
 
 function ctlMap(instrument: Instrument): Map<number, Ctl> {
@@ -113,7 +113,7 @@ export function dice(state: PresetState, amount: number, seed: number): PresetSt
 		state.routes ?? [],
 		state.xy ?? { x: 0, y: 0 }
 	);
-	if (state.instrument === 'botanica' && state.xy) {
+	if (state.instrument === 'morph' && state.xy) {
 		out.xy = {
 			x: clamp(state.xy.x + (rng() * 2 - 1) * amount, -1, 1),
 			y: clamp(state.xy.y + (rng() * 2 - 1) * amount, -1, 1)
@@ -168,23 +168,23 @@ export const FACTORY: Record<Instrument, NamedPreset[]> = {
 			)
 		}
 	],
-	botanica: [
-		{ name: 'Init', state: preset('botanica', {}) },
+	morph: [
+		{ name: 'Init', state: preset('morph', {}) },
 		{
 			name: 'Glass Drift',
-			state: preset('botanica', { 11: 0.4, 17: 0.4, 18: 0.5 }, { xy: { x: 0.6, y: 0.3 } })
+			state: preset('morph', { 11: 0.4, 17: 0.4, 18: 0.5 }, { xy: { x: 0.6, y: 0.3 } })
 		},
 		{
 			name: 'Pollen',
-			state: preset('botanica', { 13: 0.6, 14: 0.6 }, { xy: { x: -0.5, y: 0.5 } })
+			state: preset('morph', { 13: 0.6, 14: 0.6 }, { xy: { x: -0.5, y: 0.5 } })
 		},
 		{
 			name: 'Frozen Bloom',
-			state: preset('botanica', { 6: 1, 2: 0.8, 15: 0.6 }, { xy: { x: 0.2, y: -0.4 } })
+			state: preset('morph', { 6: 1, 2: 0.8, 15: 0.6 }, { xy: { x: 0.2, y: -0.4 } })
 		},
 		{
 			name: 'Choir',
-			state: preset('botanica', { 17: 0.7, 18: 0.6, 1: 0.6 }, { xy: { x: 0.1, y: 0.6 } })
+			state: preset('morph', { 17: 0.7, 18: 0.6, 1: 0.6 }, { xy: { x: 0.1, y: 0.6 } })
 		}
 	]
 };

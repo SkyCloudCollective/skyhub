@@ -2,11 +2,11 @@
 
 Both instruments ship as real DAW plugins via [nih-plug](https://github.com/robbert-vdh/nih-plug).
 The plugin crates are **thin wrappers** — they own no DSP; they call the same
-`phaseplan` / `botanica` engines the web studio runs through wasm, so the plugin
+`phaseplan` / `morph` engines the web studio runs through wasm, so the plugin
 and the browser produce byte-identical synthesis.
 
 - `crates/plugin-phaseplan` — **PhasePlan**, a MIDI instrument (CLAP + VST3).
-- `crates/plugin-botanica` — **Botanica**, a generative instrument (CLAP + VST3),
+- `crates/plugin-morph` — **Morph**, a generative instrument (CLAP + VST3),
   no MIDI; steered by the Character XY + macros. Sound design by **Tev**.
 
 ## Build
@@ -14,8 +14,8 @@ and the browser produce byte-identical synthesis.
 ```bash
 . "$HOME/.cargo/env"
 cargo xtask bundle plugin-phaseplan --release
-cargo xtask bundle plugin-botanica  --release
-# → target/bundled/{plugin-phaseplan,plugin-botanica}.{clap,vst3}
+cargo xtask bundle plugin-morph  --release
+# → target/bundled/{plugin-phaseplan,plugin-morph}.{clap,vst3}
 ```
 
 `cargo xtask` is an alias (`.cargo/config.toml`) for the `xtask` crate, which wraps

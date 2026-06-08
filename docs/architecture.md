@@ -21,7 +21,7 @@ document is the map; ADR-style decisions follow.
                  └──────────────────────────────┘
 
   Audio engine (one Rust core, two frontends):
-     crates/dsp-core ─► crates/{botanica,phaseplan}
+     crates/dsp-core ─► crates/{morph,phaseplan}
                           ├─► crates/dsp-wasm     ─► apps/web studio (AudioWorklet)
                           └─► crates/plugin-*      ─► VST3 / CLAP (nih-plug)
 ```

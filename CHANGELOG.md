@@ -11,7 +11,7 @@ The v2 re-foundation — one monorepo, one source of truth per concern.
 ### Added
 
 - **DSP core** (`crates/dsp-core`) compiled once to WebAssembly (web studio) and native
-  plugins (VST3/CLAP via `nih-plug`); two instruments (Botanica, PhasePlan).
+  plugins (VST3/CLAP via `nih-plug`); two instruments (Morph, PhasePlan).
 - **Web app** (`apps/web`, SvelteKit static): library browse/search/preview, drag-into-DAW,
   the studio (instruments in an AudioWorklet), the Galaxy timbre map, a media hub, the community board.
 - **API** (`services/api`, FastAPI over SQLite) + **worker** (librosa BPM/key/timbre analysis).

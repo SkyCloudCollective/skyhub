@@ -1,8 +1,8 @@
 # Rust workspace root — one Cargo.lock for every crate.
 #
 # The dependency graph IS the anti-divergence safeguard:
-#   dsp-core  ──►  botanica / phaseplan  ──►  dsp-wasm (web)
-#                                         └─►  plugin-* (native VST3/CLAP)
+#   dsp-core  ──►  morph / phaseplan  ──►  dsp-wasm (web)
+#                                      └─►  plugin-* (native VST3/CLAP)
 # DSP lives ONLY in dsp-core + the instrument crates; the wasm and plugin
 # wrappers are thin and contain no signal processing, so the web studio and the
 # native plugin run byte-identical code (proven by the golden-render tests).
@@ -10,11 +10,11 @@
 resolver = "2"
 members = [
     "crates/dsp-core",
-    "crates/botanica",
+    "crates/morph",
     "crates/phaseplan",
     "crates/dsp-wasm",
     "crates/plugin-phaseplan",
-    "crates/plugin-botanica",
+    "crates/plugin-morph",
     "crates/xtask",
     # added as each crate lands (keeps `cargo check` green meanwhile):
     # Desktop Tauri app — intentionally excluded from `cargo clippy/test

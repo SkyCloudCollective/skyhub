@@ -92,7 +92,7 @@ runners (not from the local dist/ — CI is the authoritative artifact source).
 
 The tag triggers:
 - `.github/workflows/ci.yml` (rust/plugins/api/web/audit jobs)
-- Future: `botanica-build.yml`, `phaseplan-build.yml` (per-plugin signed release
+- Future: `morph-build.yml`, `phaseplan-build.yml` (per-plugin signed release
   matrix — JAUNE: requires Marwan's `MAC_SIGN_ID` and `WINDOWS_SIGN_CERT`
   secrets in the repo settings).
 
@@ -111,16 +111,16 @@ directly. Document the unsigned workaround for users:
 macOS code signing + notarization:
 ```
 codesign --deep --sign "Developer ID Application: <name> (<team-id>)" \
-  dist/macos-universal/plugin-botanica.clap
-xcrun notarytool submit dist/macos-universal/plugin-botanica.clap \
+  dist/macos-universal/plugin-morph.clap
+xcrun notarytool submit dist/macos-universal/plugin-morph.clap \
   --apple-id <apple-id> --team-id <team-id> --password <app-specific-pw> --wait
-xcrun stapler staple dist/macos-universal/plugin-botanica.clap
+xcrun stapler staple dist/macos-universal/plugin-morph.clap
 ```
 
 Windows code signing:
 ```
 signtool sign /fd sha256 /tr http://timestamp.sectigo.com /td sha256 \
-  /f <cert.pfx> /p <password> dist/windows-x86_64/plugin-botanica.clap
+  /f <cert.pfx> /p <password> dist/windows-x86_64/plugin-morph.clap
 ```
 
 These are never automated locally. The keys (`MAC_SIGN_ID`, `WINDOWS_SIGN_CERT`,

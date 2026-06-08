@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "C-ABI bridge exposing the Botanica + PhasePlan engines over wasm linear memory (no wasm-bindgen), instantiable directly inside an AudioWorklet."
+description = "C-ABI bridge exposing the Morph + PhasePlan engines over wasm linear memory (no wasm-bindgen), instantiable directly inside an AudioWorklet."
 
 # cdylib → the .wasm for the web; rlib → so the native test harness can link
 # and exercise the same ABI on the host.
@@ -13,5 +13,5 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 dsp-core = { workspace = true }
-botanica = { path = "../botanica" }
+morph = { path = "../morph" }
 phaseplan = { path = "../phaseplan" }

@@ -58,7 +58,7 @@
 			plugin run identical code.
 		</p>
 		<ul>
-			<li><strong>Botanica</strong> — a granular sample-morph instrument. Sound design by <strong>Tev</strong>.</li>
+			<li><strong>Morph</strong> — a granular sample-morph instrument. Sound design by <strong>Tev</strong>.</li>
 			<li><strong>PhasePlan</strong> — a dual-wavetable subtractive synth with an open modulation matrix.</li>
 		</ul>
 	</section>

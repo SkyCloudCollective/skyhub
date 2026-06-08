@@ -3,7 +3,7 @@
 // This is a classic worklet script (no ES imports). The main thread compiles
 // the self-contained dsp_wasm.wasm and posts the WebAssembly.Module here; we
 // instantiate it synchronously (no fetch/async in the worklet realm) and call
-// the C-ABI exports directly on the linear memory. The same botanica/phaseplan
+// the C-ABI exports directly on the linear memory. The same morph/phaseplan
 // code the native plugin runs — see docs/dsp-wasm-abi.md.
 
 const QUANTUM = 128;
@@ -52,23 +52,23 @@ class DspProcessor extends AudioWorkletProcessor {
 				if (!this.ready) break;
 				if (this.instrument === 'phaseplan')
 					this.x.phaseplan_set_param(this.handle, m.id, m.value);
-				else this.x.botanica_set_param(this.handle, m.id, m.value);
+				else this.x.morph_set_param(this.handle, m.id, m.value);
 				break;
 			case 'noteOn':
 				if (!this.ready) break;
 				if (this.instrument === 'phaseplan')
 					this.x.phaseplan_note_on(this.handle, m.note, m.vel ?? 1);
-				else this.x.botanica_note_on(this.handle, m.note, m.vel ?? 1);
+				else this.x.morph_note_on(this.handle, m.note, m.vel ?? 1);
 				break;
 			case 'noteOff':
 				if (!this.ready) break;
 				if (this.instrument === 'phaseplan') this.x.phaseplan_note_off(this.handle, m.note);
-				else this.x.botanica_note_off(this.handle, m.note);
+				else this.x.morph_note_off(this.handle, m.note);
 				break;
 			case 'allOff':
 				if (!this.ready) break;
 				if (this.instrument === 'phaseplan') this.x.phaseplan_all_notes_off(this.handle);
-				else this.x.botanica_all_notes_off(this.handle);
+				else this.x.morph_all_notes_off(this.handle);
 				break;
 			case 'routes':
 				if (this.ready && this.instrument === 'phaseplan') {
@@ -84,12 +84,12 @@ class DspProcessor extends AudioWorkletProcessor {
 		if (!this.x) return;
 		if (this.handle) {
 			if (this.instrument === 'phaseplan') this.x.phaseplan_free(this.handle);
-			else this.x.botanica_free(this.handle);
+			else this.x.morph_free(this.handle);
 			this.handle = 0;
 		}
 		this.instrument = which;
 		this.handle =
-			which === 'phaseplan' ? this.x.phaseplan_new(sampleRate) : this.x.botanica_new(sampleRate);
+			which === 'phaseplan' ? this.x.phaseplan_new(sampleRate) : this.x.morph_new(sampleRate);
 	}
 
 	process(_inputs, outputs) {
@@ -98,7 +98,7 @@ class DspProcessor extends AudioWorkletProcessor {
 		const n = Math.min(out[0].length, QUANTUM);
 
 		if (this.instrument === 'phaseplan') this.x.phaseplan_process(this.handle, this.outPtr, n);
-		else this.x.botanica_process(this.handle, this.outPtr, n);
+		else this.x.morph_process(this.handle, this.outPtr, n);
 
 		// Re-derive the view every block (the buffer detaches if memory grows).
 		const buf = new Float32Array(this.x.memory.buffer, this.outPtr, n);
@@ -111,7 +111,7 @@ class DspProcessor extends AudioWorkletProcessor {
 			const v =
 				this.instrument === 'phaseplan'
 					? this.x.phaseplan_active_voices(this.handle)
-					: this.x.botanica_held_notes(this.handle);
+					: this.x.morph_held_notes(this.handle);
 			this.port.postMessage({ type: 'voices', n: v });
 		}
 		return true;

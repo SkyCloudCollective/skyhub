@@ -79,8 +79,8 @@ bash scripts/build-plugins-linux.sh
 ```
 
 Outputs:
-- `dist/linux-x86_64/plugin-botanica.clap`
-- `dist/linux-x86_64/plugin-botanica.vst3/Contents/x86_64-linux/plugin-botanica.so`
+- `dist/linux-x86_64/plugin-morph.clap`
+- `dist/linux-x86_64/plugin-morph.vst3/Contents/x86_64-linux/plugin-morph.so`
 - same for plugin-phaseplan
 
 Install paths for testing in a DAW:
@@ -94,8 +94,8 @@ bash scripts/build-plugins-windows.sh
 ```
 
 Outputs:
-- `dist/windows-x86_64/plugin-botanica.clap`
-- `dist/windows-x86_64/plugin-botanica.vst3/Contents/x86_64-win/plugin-botanica.vst3`
+- `dist/windows-x86_64/plugin-morph.clap`
+- `dist/windows-x86_64/plugin-morph.vst3/Contents/x86_64-win/plugin-morph.vst3`
 - same for plugin-phaseplan
 
 These are unsigned binaries. On a Windows host, SmartScreen will warn.
@@ -149,15 +149,15 @@ per-platform bundles.
 
 ```
 # Build (no bundle):
-cargo build -p plugin-botanica --release
+cargo build -p plugin-morph --release
 
 # Bundle (CLAP + VST3, goes to target/bundled/):
-cargo xtask bundle plugin-botanica --release
+cargo xtask bundle plugin-morph --release
 cargo xtask bundle plugin-phaseplan --release
 
 # Windows bundle (requires xwin env):
 eval "$(cargo-xwin env --target x86_64-pc-windows-msvc)"
-cargo xtask bundle plugin-botanica --release --target x86_64-pc-windows-msvc
+cargo xtask bundle plugin-morph --release --target x86_64-pc-windows-msvc
 ```
 
 ---

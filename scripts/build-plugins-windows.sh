@@ -42,7 +42,7 @@ mkdir -p "$DIST"
 # This makes xtask's inner cargo invocation find link.exe → lld-link.
 eval "$(cargo-xwin env --target "$TARGET")"
 
-PLUGINS=(plugin-botanica plugin-phaseplan)
+PLUGINS=(plugin-morph plugin-phaseplan)
 
 for plugin in "${PLUGINS[@]}"; do
   echo "--- bundling $plugin (windows/$TARGET) ---"

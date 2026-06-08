@@ -47,7 +47,7 @@ build-wasm:
 
 # native plugins (host arch). On a Mac this yields macOS bundles; on Linux, .so/.clap.
 build-plugins:
-    cargo build -p plugin-botanica -p plugin-phaseplan --release
+    cargo build -p plugin-morph -p plugin-phaseplan --release
 
 # bundle Linux plugins into dist/linux-x86_64/ (CLAP + VST3)
 bundle-linux:

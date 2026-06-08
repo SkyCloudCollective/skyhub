@@ -59,7 +59,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: |
-          cargo xtask bundle plugin-botanica --release
+          cargo xtask bundle plugin-morph --release
           cargo xtask bundle plugin-phaseplan --release
           mkdir -p dist/macos-arm64
           cp -R target/bundled/*.clap target/bundled/*.vst3 dist/macos-arm64/

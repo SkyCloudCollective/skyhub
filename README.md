@@ -30,7 +30,7 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 | | |
 |:--|:--|
 | ![Studio](docs/screenshots/studio-dark.png) | ![Galaxy](docs/screenshots/galaxy-dark.png) |
-| **Studio** — two native instruments (Botanica, PhasePlan) in an AudioWorklet | **Galaxy** — the library plotted by timbre (brightness × percussiveness) |
+| **Studio** — two native instruments (Morph, PhasePlan) in an AudioWorklet | **Galaxy** — the library plotted by timbre (brightness × percussiveness) |
 | ![Media](docs/screenshots/media-light.png) | ![Tube](docs/screenshots/tube-dark.png) |
 | **Media** — one login to the collective's self-hosted services | **Tube** — the community video wall |
 
@@ -69,7 +69,7 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 - **Worker** (`services/worker`) — Python/librosa audio analysis (BPM, key, timbre) + ingest.
 - **DSP core** (`crates/dsp-core`) — real-time-safe Rust primitives, compiled **once** to
   both WebAssembly (the web studio) and native plugins (VST3/CLAP via `nih-plug`).
-- **Instruments** (`crates/botanica`, `crates/phaseplan`) — built on `dsp-core`.
+- **Instruments** (`crates/morph`, `crates/phaseplan`) — built on `dsp-core`.
 - **Desktop** (`crates/desktop`) — a Tauri shell whose reason to exist is reliable
   drag-into-DAW (a real local library folder + a native-drag enhancement layer).
 
@@ -140,6 +140,6 @@ GNU AGPL-3.0-or-later. Network use is distribution: a hosted instance must offer
 source. See [`LICENSE`](LICENSE).
 
 The instruments and UI are original work, inspired by well-known tools but containing no
-third-party code or assets except where attributed. Sound design (Botanica): **Tev**.
+third-party code or assets except where attributed. Sound design (Morph): **Tev**.
 Meters / scopes draw on **polarity** (Robert Agthe), MIT. Full attributions in
 [`NOTICE`](NOTICE).

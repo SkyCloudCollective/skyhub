@@ -5,7 +5,7 @@
 //! compiles to a plain `cdylib` exposing `extern "C"` functions over wasm linear
 //! memory. The worklet instantiates the module directly with
 //! `WebAssembly.instantiate(module, imports)` and calls the exports — the exact
-//! same `botanica`/`phaseplan` code the native plugin runs.
+//! same `morph`/`phaseplan` code the native plugin runs.
 //!
 //! Ownership: `*_new` returns an opaque heap pointer (a `Box`); the caller must
 //! pass it back to `*_free`. Audio buffers live in wasm memory: the host calls
@@ -16,7 +16,7 @@
 //! This is the one crate that needs `unsafe` (raw pointers + `#[no_mangle]`);
 //! every actual signal-processing line still lives in the safe DSP crates.
 
-use botanica::{BotanicaParams, Engine as BotanicaEngine};
+use morph::{MorphParams, Engine as MorphEngine};
 use dsp_core::{ModRoute, SvfMode, Waveform};
 use phaseplan::{Engine as PhasePlanEngine, PhasePlanParams, VoiceParams};
 
@@ -63,27 +63,27 @@ fn svf_from_f32(v: f32) -> SvfMode {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Botanica
+// Morph
 // ═════════════════════════════════════════════════════════════════════════════
 
-/// Opaque Botanica instance (the host only ever holds a pointer to it).
-pub struct BotanicaHandle {
-    engine: BotanicaEngine,
-    params: BotanicaParams,
+/// Opaque Morph instance (the host only ever holds a pointer to it).
+pub struct MorphHandle {
+    engine: MorphEngine,
+    params: MorphParams,
 }
 
 #[no_mangle]
-pub extern "C" fn botanica_new(sample_rate: f32) -> *mut BotanicaHandle {
-    let params = BotanicaParams::default();
-    let mut engine = BotanicaEngine::new(sample_rate);
+pub extern "C" fn morph_new(sample_rate: f32) -> *mut MorphHandle {
+    let params = MorphParams::default();
+    let mut engine = MorphEngine::new(sample_rate);
     engine.set_params(params);
-    Box::into_raw(Box::new(BotanicaHandle { engine, params }))
+    Box::into_raw(Box::new(MorphHandle { engine, params }))
 }
 
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_free(p: *mut BotanicaHandle) {
+pub unsafe extern "C" fn morph_free(p: *mut MorphHandle) {
     if !p.is_null() {
         drop(Box::from_raw(p));
     }
@@ -92,9 +92,9 @@ pub unsafe extern "C" fn botanica_free(p: *mut BotanicaHandle) {
 /// Set parameter `id` to `val`. Unknown ids are ignored.
 ///
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_set_param(p: *mut BotanicaHandle, id: u32, val: f32) {
+pub unsafe extern "C" fn morph_set_param(p: *mut MorphHandle, id: u32, val: f32) {
     let h = match p.as_mut() {
         Some(h) => h,
         None => return,
@@ -129,12 +129,12 @@ pub unsafe extern "C" fn botanica_set_param(p: *mut BotanicaHandle, id: u32, val
     h.engine.set_params(h.params);
 }
 
-/// Play a note (A1): mono last-note priority steers Botanica's pitch + key.
+/// Play a note (A1): mono last-note priority steers Morph's pitch + key.
 ///
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_note_on(p: *mut BotanicaHandle, note: f32, vel: f32) {
+pub unsafe extern "C" fn morph_note_on(p: *mut MorphHandle, note: f32, vel: f32) {
     if let Some(h) = p.as_mut() {
         h.engine.note_on(note, vel);
     }
@@ -143,9 +143,9 @@ pub unsafe extern "C" fn botanica_note_on(p: *mut BotanicaHandle, note: f32, vel
 /// Release a note (falls back to the previous held note, then to the drone).
 ///
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_note_off(p: *mut BotanicaHandle, note: f32) {
+pub unsafe extern "C" fn morph_note_off(p: *mut MorphHandle, note: f32) {
     if let Some(h) = p.as_mut() {
         h.engine.note_off(note);
     }
@@ -154,9 +154,9 @@ pub unsafe extern "C" fn botanica_note_off(p: *mut BotanicaHandle, note: f32) {
 /// Release every held note.
 ///
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_all_notes_off(p: *mut BotanicaHandle) {
+pub unsafe extern "C" fn morph_all_notes_off(p: *mut MorphHandle) {
     if let Some(h) = p.as_mut() {
         h.engine.all_notes_off();
     }
@@ -165,19 +165,19 @@ pub unsafe extern "C" fn botanica_all_notes_off(p: *mut BotanicaHandle) {
 /// Number of currently-held notes (for the UI voice readout).
 ///
 /// # Safety
-/// `p` must be a live pointer from [`botanica_new`].
+/// `p` must be a live pointer from [`morph_new`].
 #[no_mangle]
-pub unsafe extern "C" fn botanica_held_notes(p: *mut BotanicaHandle) -> u32 {
+pub unsafe extern "C" fn morph_held_notes(p: *mut MorphHandle) -> u32 {
     p.as_ref().map_or(0, |h| h.engine.held_notes() as u32)
 }
 
-/// Load a mono sample (copied from wasm memory) into Botanica's loop voice.
+/// Load a mono sample (copied from wasm memory) into Morph's loop voice.
 ///
 /// # Safety
 /// `p` must be live; `ptr`/`len` must describe a readable f32 buffer.
 #[no_mangle]
-pub unsafe extern "C" fn botanica_set_sample(
-    p: *mut BotanicaHandle,
+pub unsafe extern "C" fn morph_set_sample(
+    p: *mut MorphHandle,
     ptr: *const f32,
     len: usize,
     src_rate: f32,
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn botanica_set_sample(
 /// # Safety
 /// `p` must be live; `out`/`len` must describe a writable f32 buffer.
 #[no_mangle]
-pub unsafe extern "C" fn botanica_process(p: *mut BotanicaHandle, out: *mut f32, len: usize) {
+pub unsafe extern "C" fn morph_process(p: *mut MorphHandle, out: *mut f32, len: usize) {
     let h = match p.as_mut() {
         Some(h) => h,
         None => return,
@@ -467,49 +467,49 @@ mod tests {
     }
 
     #[test]
-    fn botanica_abi_renders_audio() {
+    fn morph_abi_renders_audio() {
         let n = 512;
         let out = rs_alloc(n);
         unsafe {
-            let h = botanica_new(48_000.0);
-            botanica_set_param(h, 1, 0.6); // intensity
-            botanica_set_param(h, 4, 0.5); // xy_x
+            let h = morph_new(48_000.0);
+            morph_set_param(h, 1, 0.6); // intensity
+            morph_set_param(h, 4, 0.5); // xy_x
             let mut energy = 0.0f32;
             for _ in 0..16 {
-                botanica_process(h, out, n);
+                morph_process(h, out, n);
                 let s = core::slice::from_raw_parts(out, n);
                 assert!(s.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
                 energy += rms(s);
             }
-            assert!(energy > 0.0, "botanica abi silent");
-            botanica_free(h);
+            assert!(energy > 0.0, "morph abi silent");
+            morph_free(h);
             rs_free(out, n);
         }
     }
 
     #[test]
-    fn botanica_note_abi_is_playable() {
+    fn morph_note_abi_is_playable() {
         let n = 256;
         let out = rs_alloc(n);
         unsafe {
-            let h = botanica_new(48_000.0);
-            assert_eq!(botanica_held_notes(h), 0);
-            botanica_note_on(h, 60.0, 0.9);
-            botanica_note_on(h, 67.0, 0.9);
-            assert_eq!(botanica_held_notes(h), 2);
+            let h = morph_new(48_000.0);
+            assert_eq!(morph_held_notes(h), 0);
+            morph_note_on(h, 60.0, 0.9);
+            morph_note_on(h, 67.0, 0.9);
+            assert_eq!(morph_held_notes(h), 2);
             let mut peak = 0.0f32;
             for _ in 0..16 {
-                botanica_process(h, out, n);
+                morph_process(h, out, n);
                 let s = core::slice::from_raw_parts(out, n);
                 assert!(s.iter().all(|v| v.is_finite() && v.abs() <= 4.0));
                 peak = peak.max(s.iter().fold(0.0, |a, &v| a.max(v.abs())));
             }
-            assert!(peak > 0.0, "playable botanica produced silence");
-            botanica_note_off(h, 67.0);
-            assert_eq!(botanica_held_notes(h), 1);
-            botanica_all_notes_off(h);
-            assert_eq!(botanica_held_notes(h), 0);
-            botanica_free(h);
+            assert!(peak > 0.0, "playable morph produced silence");
+            morph_note_off(h, 67.0);
+            assert_eq!(morph_held_notes(h), 1);
+            morph_all_notes_off(h);
+            assert_eq!(morph_held_notes(h), 0);
+            morph_free(h);
             rs_free(out, n);
         }
     }

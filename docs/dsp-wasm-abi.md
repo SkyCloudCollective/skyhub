@@ -1,7 +1,7 @@
 # dsp-wasm — C-ABI reference
 
 The web studio runs the instruments' DSP inside an `AudioWorkletProcessor`. The
-`dsp-wasm` crate compiles the **same** `botanica` / `phaseplan` engines the
+`dsp-wasm` crate compiles the **same** `morph` / `phaseplan` engines the
 native plugin uses to a plain `cdylib` exposing `extern "C"` functions over wasm
 linear memory — **no wasm-bindgen**. The worklet instantiates the module with
 `WebAssembly.instantiate(module, {})` (the module is self-contained: no host
@@ -67,10 +67,10 @@ Sources: 0 LFO1, 1 LFO2, 2 mod-env, 3 amp-env, 4 velocity, 5 key.
 Targets: 0 pitch (semitones), 1 cutoff (octaves), 2 wt-pos-A, 3 wt-pos-B,
 4 amp, 5 resonance, 6 osc-mix.
 
-## Botanica exports
+## Morph exports
 
-`botanica_new`, `botanica_free`, `botanica_set_param(h,id,val)`,
-`botanica_set_sample(h,ptr,len,src_rate)`, `botanica_process(h,out,len)`.
+`morph_new`, `morph_free`, `morph_set_param(h,id,val)`,
+`morph_set_sample(h,ptr,len,src_rate)`, `morph_process(h,out,len)`.
 
 ### Parameter ids
 

@@ -1,17 +1,17 @@
-//! Botanica — CLAP/VST3 generative instrument.
+//! Morph — CLAP/VST3 generative instrument.
 //!
-//! A thin `nih-plug` wrapper around the `botanica` crate (the same DSP the web
-//! studio runs through wasm). Botanica drones from a built-in tone (or a loaded
+//! A thin `nih-plug` wrapper around the `morph` crate (the same DSP the web
+//! studio runs through wasm). Morph drones from a built-in tone (or a loaded
 //! sample) steered by the XY character puck + macros, and (A1) is playable:
 //! incoming MIDI notes pitch the loop and set the root the generative layers
 //! lock to (mono, last-note priority). With no note held it falls back to the
 //! drone. Sound design by **Tev**; original implementation.
 
-use botanica::{BotanicaParams, Engine};
+use morph::{MorphParams, Engine};
 use nih_plug::prelude::*;
 use std::sync::Arc;
 
-struct BotanicaPlugin {
+struct MorphPlugin {
     params: Arc<PluginParams>,
     engine: Engine,
 }
@@ -81,7 +81,7 @@ impl Default for PluginParams {
     }
 }
 
-impl Default for BotanicaPlugin {
+impl Default for MorphPlugin {
     fn default() -> Self {
         Self {
             params: Arc::new(PluginParams::default()),
@@ -90,9 +90,9 @@ impl Default for BotanicaPlugin {
     }
 }
 
-impl BotanicaPlugin {
-    fn engine_params(&self) -> BotanicaParams {
-        BotanicaParams {
+impl MorphPlugin {
+    fn engine_params(&self) -> MorphParams {
+        MorphParams {
             xy_x: self.params.xy_x.value(),
             xy_y: self.params.xy_y.value(),
             intensity: self.params.intensity.value(),
@@ -102,13 +102,13 @@ impl BotanicaPlugin {
             arp_amount: self.params.arp.value(),
             strings_level: self.params.strings.value(),
             spark_on: if self.params.spark.value() { 1.0 } else { 0.0 },
-            ..BotanicaParams::default()
+            ..MorphParams::default()
         }
     }
 }
 
-impl Plugin for BotanicaPlugin {
-    const NAME: &'static str = "Botanica";
+impl Plugin for MorphPlugin {
+    const NAME: &'static str = "Morph";
     const VENDOR: &'static str = "the SkyCloudCollective";
     const URL: &'static str = "https://skyhub.dev";
     const EMAIL: &'static str = "noreply@skyhub.dev";
@@ -136,7 +136,7 @@ impl Plugin for BotanicaPlugin {
         buffer_config: &BufferConfig,
         _context: &mut impl InitContext<Self>,
     ) -> bool {
-        // Botanica has no set_sample_rate; rebuild at the host rate.
+        // Morph has no set_sample_rate; rebuild at the host rate.
         self.engine = Engine::new(buffer_config.sample_rate);
         true
     }
@@ -177,8 +177,8 @@ impl Plugin for BotanicaPlugin {
     }
 }
 
-impl ClapPlugin for BotanicaPlugin {
-    const CLAP_ID: &'static str = "dev.skyhub.botanica";
+impl ClapPlugin for MorphPlugin {
+    const CLAP_ID: &'static str = "dev.skyhub.morph";
     const CLAP_DESCRIPTION: Option<&'static str> =
         Some("Granular sample-morph generative instrument (sound design by Tev)");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);
@@ -190,11 +190,11 @@ impl ClapPlugin for BotanicaPlugin {
     ];
 }
 
-impl Vst3Plugin for BotanicaPlugin {
-    const VST3_CLASS_ID: [u8; 16] = *b"SKYBotanica00001";
+impl Vst3Plugin for MorphPlugin {
+    const VST3_CLASS_ID: [u8; 16] = *b"SKYMorph00000001";
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
         &[Vst3SubCategory::Instrument, Vst3SubCategory::Synth];
 }
 
-nih_export_clap!(BotanicaPlugin);
-nih_export_vst3!(BotanicaPlugin);
+nih_export_clap!(MorphPlugin);
+nih_export_vst3!(MorphPlugin);

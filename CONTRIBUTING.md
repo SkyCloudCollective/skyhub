@@ -33,7 +33,7 @@ bash tools/build-wasm.sh   # builds crates/dsp-wasm -> apps/web/static/dsp/
 ```
 
 Plugins bundle via `cargo xtask bundle plugin-phaseplan --release` (and
-`plugin-botanica`) — see [`docs/plugins.md`](docs/plugins.md).
+`plugin-morph`) — see [`docs/plugins.md`](docs/plugins.md).
 
 ## How we work
 
@@ -51,7 +51,7 @@ Plugins bundle via `cargo xtask bundle plugin-phaseplan --release` (and
   contrast, `prefers-reduced-motion`, no alarm iconography. Keyboard-reachable controls.
 - **Originality.** The instruments are *inspired by* well-known tools but must contain
   **no** third-party code or assets. Keep required credits intact: sound design by
-  **Tev** (Botanica), meters by **polarity** (MIT).
+  **Tev** (Morph), meters by **polarity** (MIT).
 - **No secrets, ever.** Nothing internal (hosts, tokens, private paths) goes in the
   repo or an artifact; CI runs a residue scan.
 

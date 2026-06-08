@@ -38,23 +38,23 @@ const rms = Math.sqrt(energy / (blocks * BLK));
 x.phaseplan_note_off(synth, 57);
 x.phaseplan_free(synth);
 
-// Botanica too
-const bot = x.botanica_new(SR);
-x.botanica_set_param(bot, 1, 0.6); // intensity
+// Morph too
+const bot = x.morph_new(SR);
+x.morph_set_param(bot, 1, 0.6); // intensity
 let botE = 0;
 for (let b = 0; b < 64; b++) {
-  x.botanica_process(bot, out, BLK);
+  x.morph_process(bot, out, BLK);
   const base = out >> 2, view = mem();
   for (let i = 0; i < BLK; i++) botE += view[base + i] ** 2;
 }
 const botRms = Math.sqrt(botE / (64 * BLK));
-x.botanica_free(bot);
+x.morph_free(bot);
 x.rs_free(out, BLK);
 
 console.log(`PhasePlan: peak=${peak.toFixed(3)} rms=${rms.toFixed(4)} nonfinite=${nonfinite}`);
-console.log(`Botanica:  rms=${botRms.toFixed(4)}`);
+console.log(`Morph:     rms=${botRms.toFixed(4)}`);
 if (nonfinite > 0) throw new Error('non-finite output');
 if (peak > 1.0001) throw new Error(`clipped: ${peak}`);
 if (rms < 0.01) throw new Error('PhasePlan silent');
-if (botRms < 0.005) throw new Error('Botanica silent');
+if (botRms < 0.005) throw new Error('Morph silent');
 console.log('OK — wasm ABI renders finite, bounded, audible output for both instruments.');

@@ -25,7 +25,7 @@ export PATH="$HOME/.local/bin:$PATH"
 DIST=dist/linux-x86_64
 mkdir -p "$DIST"
 
-PLUGINS=(plugin-botanica plugin-phaseplan)
+PLUGINS=(plugin-morph plugin-phaseplan)
 
 for plugin in "${PLUGINS[@]}"; do
   echo "--- bundling $plugin (linux) ---"

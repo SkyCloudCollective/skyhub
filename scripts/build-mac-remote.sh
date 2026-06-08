@@ -114,7 +114,7 @@ cd "$REPO_PATH"
 [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
 export PATH="$HOME/.local/bin:$PATH"
 
-PLUGINS=(plugin-botanica plugin-phaseplan)
+PLUGINS=(plugin-morph plugin-phaseplan)
 
 build_target() {
   local plugin="$1" target="$2"

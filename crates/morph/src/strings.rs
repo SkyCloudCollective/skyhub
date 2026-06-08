@@ -1,4 +1,4 @@
-//! Strings — a bounded polyphonic choir/string bed for Botanica.
+//! Strings — a bounded polyphonic choir/string bed for Morph.
 //!
 //! Port of v1's `triggerStringChord` + `makeStringVoice` (the unused
 //! `char.strings.*` genes), rebuilt as a real, tamed DSP module. A fixed voice

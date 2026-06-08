@@ -1,4 +1,4 @@
-//! Voice characters — the XY morph system that gives Botanica its control surface.
+//! Voice characters — the XY morph system that gives Morph its control surface.
 //!
 //! Five "characters" sit on a ring; the XY puck picks an angle and interpolates
 //! between the two nearest. Each character is a set of *deltas* that bias the

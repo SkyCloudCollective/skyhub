@@ -12,7 +12,7 @@
 #   RS_MAC_SSH_HOST=user@mymac bash scripts/build-all.sh   # include macOS
 #
 # Outputs:
-#   dist/<platform>/plugin-botanica.{clap,vst3}
+#   dist/<platform>/plugin-morph.{clap,vst3}
 #   dist/<platform>/plugin-phaseplan.{clap,vst3}
 #   dist/SHA256SUMS                  — all artifact hashes, one per line
 #   dist/manifest.json               — machine-readable per-platform manifest

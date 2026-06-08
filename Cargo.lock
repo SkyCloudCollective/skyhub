@@ -80,7 +80,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4388bee8683e3d04af747c73422af53102d2bd24d9eadb6cbc100baef4b43f8"
 
 [[package]]
-name = "botanica"
+name = "morph"
 version = "0.1.0"
 dependencies = [
  "dsp-core",
@@ -218,7 +218,7 @@ version = "0.1.0"
 name = "dsp-wasm"
 version = "0.1.0"
 dependencies = [
- "botanica",
+ "morph",
  "dsp-core",
  "phaseplan",
 ]
@@ -471,10 +471,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
-name = "plugin-botanica"
+name = "plugin-morph"
 version = "0.1.0"
 dependencies = [
- "botanica",
+ "morph",
  "nih_plug",
 ]
 

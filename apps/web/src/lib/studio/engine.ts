@@ -6,7 +6,7 @@
 // and notes are fire-and-forget messages. See static/dsp/dsp-worklet.js.
 import { browser } from '$app/environment';
 
-export type Instrument = 'phaseplan' | 'botanica';
+export type Instrument = 'phaseplan' | 'morph';
 export interface Route {
 	source: number;
 	target: number;

@@ -3,7 +3,7 @@
 	import { StudioEngine, type Instrument, type Route } from '$lib/studio/engine';
 	import {
 		PHASEPLAN_GROUPS,
-		BOTANICA_GROUPS,
+		MORPH_GROUPS,
 		MOD_SOURCES,
 		MOD_TARGETS,
 		defaults,
@@ -24,8 +24,8 @@
 
 	// per-instrument param values (id → value)
 	let pp = $state<Record<number, number>>(Object.fromEntries(defaults(PHASEPLAN_GROUPS)));
-	let bot = $state<Record<number, number>>(Object.fromEntries(defaults(BOTANICA_GROUPS)));
-	// Botanica XY puck (-1..1), not part of the knob grid
+	let bot = $state<Record<number, number>>(Object.fromEntries(defaults(MORPH_GROUPS)));
+	// Morph XY puck (-1..1), not part of the knob grid
 	let bx = $state(0);
 	let by = $state(0);
 
@@ -36,7 +36,7 @@
 		{ source: 1, target: 0, depth: 0 }
 	]);
 
-	const groups = $derived<Group[]>(instrument === 'phaseplan' ? PHASEPLAN_GROUPS : BOTANICA_GROUPS);
+	const groups = $derived<Group[]>(instrument === 'phaseplan' ? PHASEPLAN_GROUPS : MORPH_GROUPS);
 	const vals = $derived(instrument === 'phaseplan' ? pp : bot);
 
 	engine.onVoices = (n) => (voices = n);
@@ -45,7 +45,7 @@
 	function flushAll() {
 		const v = instrument === 'phaseplan' ? pp : bot;
 		for (const [id, value] of Object.entries(v)) engine.setParam(+id, value);
-		if (instrument === 'botanica') {
+		if (instrument === 'morph') {
 			engine.setParam(4, bx);
 			engine.setParam(5, by);
 		} else {
@@ -136,11 +136,11 @@
 			</button>
 			<button
 				role="tab"
-				aria-selected={instrument === 'botanica'}
-				class:active={instrument === 'botanica'}
-				onclick={() => pick('botanica')}
+				aria-selected={instrument === 'morph'}
+				class:active={instrument === 'morph'}
+				onclick={() => pick('morph')}
 			>
-				Botanica
+				Morph
 			</button>
 		</div>
 		<p class="blurb muted">
@@ -195,7 +195,7 @@
 			</section>
 		{/each}
 
-		{#if instrument === 'botanica'}
+		{#if instrument === 'morph'}
 			<section class="panel glass xy-panel">
 				<h2>Character XY</h2>
 				<XYPad x={bx} y={by} label="Character" oninput={setXY} />
@@ -240,9 +240,9 @@
 		{/if}
 	</div>
 
-	{#if instrument === 'botanica'}
+	{#if instrument === 'morph'}
 		<p class="play-bot muted">
-			Play the keys to pitch Botanica — the note you hold sets the root the layers lock to (Spark, string
+			Play the keys to pitch Morph — the note you hold sets the root the layers lock to (Spark, string
 			bed, resonance). Release everything and it drifts back to a drone. Shape it with the Character XY pad
 			and the knobs above.
 		</p>

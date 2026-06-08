@@ -4,9 +4,10 @@ Notable changes to SkyHub. The format follows
 [Keep a Changelog](https://keepachangelog.com/); the project aims at
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.0] - 2026-06-08
 
-The v2 re-foundation — one monorepo, one source of truth per concern.
+The first tagged release — the v2 re-foundation: one monorepo, one source of truth per concern.
+This tag triggers the first plugin + desktop + container build.
 
 ### Added
 
@@ -25,5 +26,3 @@ The v2 re-foundation — one monorepo, one source of truth per concern.
 ### Changed
 
 - The theme-customisation demo is a lossless animated WebP (full colour) instead of a GIF.
-
-_`v0.1.0` will be the first tagged release — it triggers the plugin + desktop + container build._

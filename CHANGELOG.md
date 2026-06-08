@@ -6,19 +6,24 @@ Notable changes to SkyHub. The format follows
 
 ## [0.1.1] - 2026-06-08
 
-### Fixed
-
-- **Desktop app now builds.** Committed a proper square app-icon set under
-  `crates/desktop/icons/` (generated from `crates/desktop/app-icon.png`) instead of
-  generating icons at build time from a non-square screenshot — which failed the Tauri
-  Linux and Windows jobs in v0.1.0.
-- **Container image now publishes to GHCR.** The image path is lower-cased
-  (`ghcr.io/skycloudcollective/skyhub`), as the registry requires.
-
 ### Added
 
-- First desktop bundles (Linux `.AppImage` + `.deb`, Windows NSIS `.exe`) and the GHCR
-  container image, alongside the plugins.
+- **Container image** published to GHCR (`ghcr.io/skycloudcollective/skyhub`),
+  alongside the plugin bundles.
+
+### Fixed
+
+- **GHCR push** now uses a lower-cased image path, which the registry requires.
+- **Release resilience**: the release publishes the plugin bundles (+ container)
+  without being held hostage by the best-effort desktop jobs, and pulls artifacts by
+  name instead of grabbing the auto-generated docker build-record (which broke publish).
+- Committed a proper square app-icon set under `crates/desktop/icons/` (from
+  `crates/desktop/app-icon.png`) for the desktop build.
+
+### Notes
+
+- Desktop bundles (Tauri AppImage / deb / NSIS) are a tracked follow-up: the build job
+  runs on manual dispatch while it's debugged and does not gate the release.
 
 ## [0.1.0] - 2026-06-08
 

@@ -75,6 +75,11 @@ jobs:
   #
   # Outputs uploaded: SkyHub_*.AppImage, SkyHub_*_amd64.deb
   desktop-linux:
+    # Desktop bundles are a tracked follow-up — the tag build ships plugins +
+    # container. Run the desktop job only on manual dispatch while we debug the
+    # Tauri build, so it never blocks a release.
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    continue-on-error: true
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -119,10 +124,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: crates/desktop
-          # We built the web ourselves above; skip the beforeBuildCommand.
           args: --bundles appimage,deb
-          uploadArtifacts: true
-          artifactName: desktop-linux-${{ github.ref_name }}
+
+      - name: Upload Linux desktop bundles
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          if-no-files-found: ignore
+          path: |
+            target/release/bundle/appimage/*.AppImage
+            target/release/bundle/deb/*.deb
 
   # ── Desktop app — Windows (.exe NSIS installer) ─────────────────────────────
   #
@@ -131,6 +143,8 @@ jobs:
   # For a signed build, set TAURI_SIGNING_PRIVATE_KEY + TAURI_SIGNING_PRIVATE_KEY_PASSWORD
   # in GitHub Actions secrets (operator follow-up, not wired here).
   desktop-windows:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    continue-on-error: true
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -159,8 +173,14 @@ jobs:
         with:
           projectPath: crates/desktop
           args: --bundles nsis
-          uploadArtifacts: true
-          artifactName: desktop-windows-${{ github.ref_name }}
+
+      - name: Upload Windows desktop installer
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          if-no-files-found: ignore
+          path: target/release/bundle/nsis/*.exe
 
   container:
     runs-on: ubuntu-latest
@@ -186,20 +206,25 @@ jobs:
             ghcr.io/${{ steps.img.outputs.owner }}/skyhub:${{ github.ref_name }}
 
   publish:
+    # Only the plugin jobs gate the release. The container pushes to GHCR
+    # independently; the desktop bundles are a dispatch-only follow-up. This keeps
+    # a tag from being held hostage by the desktop or container jobs.
     needs:
       - plugins-linux
       - plugins-windows
       - plugins-macos
-      - desktop-linux
-      - desktop-windows
-      - container
-    # Run even if macos plugins or an individual desktop job fails (unsigned
-    # builds are best-effort; we publish whatever succeeded).
+    # Run even if the macOS plugins (best-effort, unsigned) fail.
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      # Pull only the plugin (and, when present, desktop) artifacts by name —
+      # never the auto-generated docker build-record artifact, which broke the
+      # earlier "download everything" step.
       - uses: actions/download-artifact@v4
-        with: { path: artifacts }
+        with:
+          pattern: "{plugins,desktop}-*"
+          path: artifacts
+          merge-multiple: true
       - name: Collect zips + compute SHA256SUMS
         run: |
           mkdir -p out
@@ -223,16 +248,17 @@ jobs:
             SkyHub ${{ github.ref_name }}
 
             **Plugins** (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
-            **Desktop app**: Linux AppImage + deb, Windows NSIS installer (unsigned).
             **Container image**: `ghcr.io/skycloudcollective/skyhub:${{ github.ref_name }}`
+
+            Desktop bundles (Tauri) and signed builds are in progress and will land in a
+            follow-up release.
 
             ---
 
-            **Unsigned build caveats**
+            **Unsigned plugin caveats**
 
-            - Linux: no OS gating — load `.clap`/`.vst3` from `~/.clap/` / `~/.vst3/`.
-            - Windows: SmartScreen warns on first run. Right-click the `.exe` → "Run anyway".
-            - macOS plugin bundles: Gatekeeper blocks them. Right-click in Finder → Open → Open.
+            - Linux: no OS gating — drop `.clap`/`.vst3` into `~/.clap/` / `~/.vst3/`.
+            - macOS bundles: Gatekeeper blocks them. Right-click in Finder → Open → Open.
 
             Code signing (Apple Developer ID, Windows Authenticode) is a planned
             operator follow-up and is not automated in this build.

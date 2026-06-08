@@ -4,10 +4,27 @@ Notable changes to SkyHub. The format follows
 [Keep a Changelog](https://keepachangelog.com/); the project aims at
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-06-08
+
+### Fixed
+
+- **Desktop app now builds.** Committed a proper square app-icon set under
+  `crates/desktop/icons/` (generated from `crates/desktop/app-icon.png`) instead of
+  generating icons at build time from a non-square screenshot — which failed the Tauri
+  Linux and Windows jobs in v0.1.0.
+- **Container image now publishes to GHCR.** The image path is lower-cased
+  (`ghcr.io/skycloudcollective/skyhub`), as the registry requires.
+
+### Added
+
+- First desktop bundles (Linux `.AppImage` + `.deb`, Windows NSIS `.exe`) and the GHCR
+  container image, alongside the plugins.
+
 ## [0.1.0] - 2026-06-08
 
 The first tagged release — the v2 re-foundation: one monorepo, one source of truth per concern.
-This tag triggers the first plugin + desktop + container build.
+The plugin bundles (CLAP + VST3: Linux, Windows, macOS arm64) ship here; the desktop bundles
+and container image follow in 0.1.1.
 
 ### Added
 

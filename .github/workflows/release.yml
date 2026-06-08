@@ -104,17 +104,10 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      # Generate placeholder icons from the existing screenshot.
-      # A real branded icon can replace docs/screenshots/library-light.png later;
-      # the generate step is idempotent.
-      - name: Generate Tauri icons
-        run: |
-          pnpm --filter @skyhub/web... exec true  # ensure workspace is set up
-          npx @tauri-apps/cli icon docs/screenshots/library-light.png \
-            --output crates/desktop/icons
-
       # Build the SvelteKit static site first (beforeBuildCommand in tauri.conf.json
       # would also do this, but running it explicitly here makes the step visible).
+      # Icons are committed under crates/desktop/icons (generated from
+      # crates/desktop/app-icon.png) — no build-time generation needed.
       - name: Build web front-end
         working-directory: apps/web
         run: pnpm build
@@ -156,9 +149,6 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate Tauri icons
-        run: npx @tauri-apps/cli icon docs/screenshots/library-light.png --output crates/desktop/icons
-
       - name: Build web front-end
         working-directory: apps/web
         run: pnpm build
@@ -177,6 +167,10 @@ jobs:
     permissions: { contents: read, packages: write }
     steps:
       - uses: actions/checkout@v4
+      # GHCR rejects upper-case paths; the org (SkyCloudCollective) is mixed-case.
+      - name: Lowercase image owner
+        id: img
+        run: echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -188,8 +182,8 @@ jobs:
           file: Containerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/skyhub:latest
-            ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}
+            ghcr.io/${{ steps.img.outputs.owner }}/skyhub:latest
+            ghcr.io/${{ steps.img.outputs.owner }}/skyhub:${{ github.ref_name }}
 
   publish:
     needs:
@@ -230,7 +224,7 @@ jobs:
 
             **Plugins** (CLAP + VST3): Linux x86_64, Windows x86_64, macOS arm64 (unsigned).
             **Desktop app**: Linux AppImage + deb, Windows NSIS installer (unsigned).
-            **Container image**: `ghcr.io/${{ github.repository_owner }}/skyhub:${{ github.ref_name }}`
+            **Container image**: `ghcr.io/skycloudcollective/skyhub:${{ github.ref_name }}`
 
             ---
 

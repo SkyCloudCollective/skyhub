@@ -106,6 +106,13 @@ Be good to each other ([`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)); here's how t
 [contribute](CONTRIBUTING.md). Open (public) contribution is gated in code (`RS_OPEN_UGC`) until a
 consent/legal review — **private and unlisted collaboration are always on**.
 
+| | |
+|:--|:--|
+| ![The Board](docs/screenshots/board-dark.png) | ![Members](docs/screenshots/members-light.png) |
+| **The Board** — propose, upvote, a public roadmap | **Members** — profiles, channels, follow |
+| ![Projects](docs/screenshots/projects-dark.png) | ![A member's profile](docs/screenshots/profile-light.png) |
+| **Projects** — collaborate, "a GitHub of music" | **Profiles** — each member's own channel |
+
 ## Principles
 
 - **One source of truth.** The DSP is one Rust core, not a JS copy and a Rust copy. The

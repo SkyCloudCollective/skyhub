@@ -54,6 +54,14 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 
 <div align="center">
 
+**Find it fast** — search and filter the whole library, instantly.
+
+![Searching the library](docs/screenshots/library-demo.webp)
+
+</div>
+
+<div align="center">
+
 **Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member.
 
 ![Theme customisation](docs/screenshots/theme.webp)

@@ -1,13 +1,16 @@
+<div align="center">
+
 # SkyHub
+
+**A community-owned, self-hostable audio-samples platform** — browse, preview, organize,
+and drag straight into your DAW. Two native instruments (web + VST3/CLAP) on one shared DSP core.
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-2b6cd4)](LICENSE) [![Self-hostable](https://img.shields.io/badge/self--hostable-no%20SaaS-2fa15a)](SELFHOST.md) [![Plugins](https://img.shields.io/badge/plugins-VST3%20%C2%B7%20CLAP-514a40)](#surfaces) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-f4b71e)](CONTRIBUTING.md)
 
+</div>
+
 <!-- CI badge — activate once the repo lands under the org:
 [![CI](https://github.com/ORG/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/ORG/REPO/actions/workflows/ci.yml) -->
-
-A community-owned, self-hostable audio-samples platform — browse, preview, organize,
-and drag straight into your DAW — with two native instruments (web + VST3/CLAP) built on
-a single shared DSP core.
 
 This is the **v2 re-foundation**: a clean monorepo with one source of truth per concern.
 It supersedes the v1 prototype, keeping what was proven (the audio analyzer, the catalog
@@ -16,9 +19,13 @@ duplicated backend, a monolithic frontend, and a forked DSP).
 
 ## Screenshots
 
+<div align="center">
+
 The studio — two native instruments (Botanica, PhasePlan) running in an AudioWorklet:
 
 ![The studio](docs/screenshots/studio-dark.png)
+
+</div>
 
 | | |
 |:--|:--|
@@ -44,9 +51,13 @@ The studio — two native instruments (Botanica, PhasePlan) running in an AudioW
 
 <sub>Captured in English; every surface ships `aero-light` / `aero-dark` plus user-chosen palettes and a custom accent. More in [`docs/screenshots/`](docs/screenshots/).</sub>
 
+<div align="center">
+
 **Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member:
 
 ![Theme customisation](docs/screenshots/theme.webp)
+
+</div>
 
 ## Surfaces
 

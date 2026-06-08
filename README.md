@@ -41,7 +41,7 @@ The studio — two native instruments (Botanica, PhasePlan) running in an AudioW
 
 **Make it yours** — six palettes, a fully custom accent, light/dark, and saved themes, all per-member:
 
-![Theme customisation](docs/screenshots/theme.gif)
+![Theme customisation](docs/screenshots/theme.webp)
 
 ## Surfaces
 

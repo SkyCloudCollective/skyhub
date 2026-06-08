@@ -1,5 +1,10 @@
 # RanchSamples
 
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-2b6cd4)](LICENSE) [![Self-hostable](https://img.shields.io/badge/self--hostable-no%20SaaS-2fa15a)](SELFHOST.md) [![Plugins](https://img.shields.io/badge/plugins-VST3%20%C2%B7%20CLAP-514a40)](#surfaces) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-f4b71e)](CONTRIBUTING.md)
+
+<!-- CI badge — activate once the repo lands under the org:
+[![CI](https://github.com/ORG/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/ORG/REPO/actions/workflows/ci.yml) -->
+
 A community-owned, self-hostable audio-samples platform — browse, preview, organize,
 and drag straight into your DAW — with two native instruments (web + VST3/CLAP) built on
 a single shared DSP core.

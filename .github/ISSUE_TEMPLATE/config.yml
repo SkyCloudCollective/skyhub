@@ -1,0 +1,3 @@
+# Templates above, but free-form issues stay allowed too.
+# Security issues go through SECURITY.md (private advisory), not a public issue.
+blank_issues_enabled: true

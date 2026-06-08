@@ -17,16 +17,32 @@ CATEGORIES = [
 _SAMPLE_FIELDS = (
     "id, filename, title, contributor, pack, category, kind, instrument, bpm, "
     "musical_key, duration_ms, brightness, noisiness, percussiveness, loudness, "
-    "samplerate, channels, bytes, original_format, created_at"
+    "samplerate, channels, bytes, original_format, origin, created_at"
 )
+
+# The collective view only ever shows a member's OWN work. 'licensed' rows are
+# third-party/commercial packs a member collected — kept private, never shared.
+# Defence-in-depth: every read surface filters on this by default, on top of the
+# deploy DB being curated to originals (migration 0003 classifies them).
+SHAREABLE_ORIGIN = "original"
+
+
+def _shared(alias: str = "", shared_only: bool = True) -> str:
+    """A WHERE fragment limiting results to shareable (original) content, or ''."""
+    if not shared_only:
+        return ""
+    col = f"{alias}.origin" if alias else "origin"
+    return f"{col} = '{SHAREABLE_ORIGIN}'"
 
 
 def _row(r: sqlite3.Row) -> dict:
     return {k: r[k] for k in r.keys()}
 
 
-def get_sample(conn: sqlite3.Connection, sample_id: int) -> dict | None:
-    r = conn.execute(f"SELECT {_SAMPLE_FIELDS}, peaks_json FROM samples WHERE id=?", (sample_id,)).fetchone()
+def get_sample(conn: sqlite3.Connection, sample_id: int, shared_only: bool = True) -> dict | None:
+    clause = _shared(shared_only=shared_only)
+    where = f"WHERE id=? AND {clause}" if clause else "WHERE id=?"
+    r = conn.execute(f"SELECT {_SAMPLE_FIELDS}, peaks_json FROM samples {where}", (sample_id,)).fetchone()
     if not r:
         return None
     d = _row(r)
@@ -47,27 +63,32 @@ def peaks(conn: sqlite3.Connection, sample_id: int) -> list | None:
     return json.loads(r["peaks_json"]) if r["peaks_json"] else []
 
 
-def galaxy(conn: sqlite3.Connection, limit: int = 2000) -> list[dict]:
-    """Compact timbre projection for the RanchMap scatter (only samples whose
+def galaxy(conn: sqlite3.Connection, limit: int = 2000, shared_only: bool = True) -> list[dict]:
+    """Compact timbre projection for the galaxy scatter (only samples whose
     timbre features are analysed). Just the columns the plot needs."""
     limit = max(1, min(int(limit), 5000))
+    clause = _shared(shared_only=shared_only)
+    extra = f" AND {clause}" if clause else ""
     rows = conn.execute(
         "SELECT id, title, contributor, category, bpm, duration_ms, "
         "brightness, percussiveness, noisiness, loudness "
         "FROM samples "
-        "WHERE brightness IS NOT NULL AND percussiveness IS NOT NULL "
+        "WHERE brightness IS NOT NULL AND percussiveness IS NOT NULL" + extra + " "
         "ORDER BY id LIMIT ?",
         (limit,),
     ).fetchall()
     return [_row(r) for r in rows]
 
 
-def facets(conn: sqlite3.Connection) -> dict:
+def facets(conn: sqlite3.Connection, shared_only: bool = True) -> dict:
+    clause = _shared(shared_only=shared_only)
+    extra = f" AND {clause}" if clause else ""
+
     def distinct(col: str) -> list[str]:
         return [
             r[0]
             for r in conn.execute(
-                f"SELECT DISTINCT {col} FROM samples WHERE {col} IS NOT NULL AND {col} <> '' ORDER BY {col}"
+                f"SELECT DISTINCT {col} FROM samples WHERE {col} IS NOT NULL AND {col} <> ''{extra} ORDER BY {col}"
             )
         ]
 
@@ -96,9 +117,12 @@ def search(
     tag: str | None = None,
     limit: int = 60,
     offset: int = 0,
+    shared_only: bool = True,
 ) -> dict:
     where: list[str] = []
     args: list = []
+    if shared_only:
+        where.append(_shared("s"))
     if q:
         where.append("(s.title LIKE ? OR s.filename LIKE ?)")
         args += [f"%{q}%", f"%{q}%"]
@@ -139,11 +163,17 @@ def _sample_select(alias: str) -> str:
     return ", ".join(f"{alias}.{f.strip()}" for f in _SAMPLE_FIELDS.split(","))
 
 
-def resolve_file(conn: sqlite3.Connection, sample_id: int, prefer_preview: bool = True):
-    """Return (rel_path, filename) for serving, preferring a browser-playable
-    preview if one was transcoded. None if the sample doesn't exist."""
+def resolve_file(
+    conn: sqlite3.Connection, sample_id: int, prefer_preview: bool = True, shared_only: bool = True
+):
+    """Return (rel_path, filename, is_preview) for serving, preferring a browser-
+    playable preview if one was transcoded. None if the sample doesn't exist — or,
+    in shared mode, if it's a 'licensed' file (so the front door never serves a
+    collected commercial pack, even by direct id)."""
+    clause = _shared(shared_only=shared_only)
+    where = f"WHERE id=? AND {clause}" if clause else "WHERE id=?"
     r = conn.execute(
-        "SELECT rel_path, filename, preview_rel FROM samples WHERE id=?", (sample_id,)
+        f"SELECT rel_path, filename, preview_rel FROM samples {where}", (sample_id,)
     ).fetchone()
     if not r:
         return None

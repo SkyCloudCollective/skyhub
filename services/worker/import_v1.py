@@ -26,7 +26,7 @@ import shutil
 import sqlite3
 import sys
 
-from db import connect, init_db
+from db import classify_origin, connect, init_db
 
 AUDIO_EXT = {".wav", ".flac", ".aiff", ".aif", ".ogg", ".mp3", ".m4a"}
 
@@ -92,10 +92,13 @@ def main() -> int:
         from analyzer import analyze as _analyze  # heavy (librosa/numba); import lazily
         analyze = _analyze
 
-    placeholders = ",".join("?" for _ in shared)
-    updates = ",".join(f"{c}=excluded.{c}" for c in shared if c != "rel_path")
+    # Always classify origin (a v1 source has no such column): own work vs a
+    # collected commercial pack, so the import never floods the shared catalog.
+    insert_cols = shared + ([] if "origin" in shared else ["origin"])
+    placeholders = ",".join("?" for _ in insert_cols)
+    updates = ",".join(f"{c}=excluded.{c}" for c in insert_cols if c != "rel_path")
     insert_sql = (
-        f"INSERT INTO samples ({','.join(shared)}) VALUES ({placeholders}) "
+        f"INSERT INTO samples ({','.join(insert_cols)}) VALUES ({placeholders}) "
         f"ON CONFLICT(rel_path) DO UPDATE SET {updates}, indexed_at=datetime('now')"
     )
     feature_sql = (
@@ -115,7 +118,8 @@ def main() -> int:
             n_missing += 1
             print(f"  ! missing audio (metadata only): {rel}", file=sys.stderr)
 
-        dest.execute(insert_sql, [row[c] for c in shared])
+        vals = [row[c] for c in shared] + ([] if "origin" in shared else [classify_origin(rel)])
+        dest.execute(insert_sql, vals)
         sid = dest.execute("SELECT id FROM samples WHERE rel_path=?", (rel,)).fetchone()[0]
         n_samples += 1
 

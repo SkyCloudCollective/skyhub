@@ -84,3 +84,62 @@ def test_x_rs_handle_is_cleaned(client):
 
 def test_absent_x_rs_handle_keeps_dev_default(client):
     assert client.get("/v1/me").json()["handle"] == "me"
+
+
+# ── per-member Matrix gate (each member signs in with their own PDF creds) ─────
+def _enable_matrix(monkeypatch, validate):
+    """Turn on the per-member gate; `validate(user, pw)` stands in for Synapse."""
+    from app import auth, main
+
+    main._AUTH_CACHE.clear()
+    monkeypatch.setenv("RANCHSAMPLES_MATRIX_HS", "https://music.example.test")
+    monkeypatch.delenv("RS_BASIC_AUTH", raising=False)
+    monkeypatch.setattr(auth, "matrix_login", validate)
+
+
+def test_matrix_gate_allows_a_valid_member(client, monkeypatch):
+    _enable_matrix(monkeypatch, lambda u, pw: "lionel" if (u, pw) == ("lionel", "pdf-pass") else None)
+    r = client.get("/v1/me", headers=_basic("lionel", "pdf-pass"))
+    assert r.status_code == 200
+    # identity is the signed-in member — not the dev handle, not a client header
+    assert r.json()["handle"] == "lionel"
+    assert r.json()["auth_enabled"] is True
+
+
+def test_matrix_gate_rejects_bad_password(client, monkeypatch):
+    _enable_matrix(monkeypatch, lambda u, pw: "lionel" if pw == "pdf-pass" else None)
+    assert client.get("/v1/me", headers=_basic("lionel", "wrong")).status_code == 401
+
+
+def test_matrix_gate_requires_creds(client, monkeypatch):
+    _enable_matrix(monkeypatch, lambda u, pw: "lionel")
+    r = client.get("/v1/me")
+    assert r.status_code == 401
+    assert r.headers.get("www-authenticate") == 'Basic realm="SkyHub"'
+
+
+def test_matrix_gate_identity_overrides_x_rs_handle(client, monkeypatch):
+    # the authenticated member wins over any client-supplied X-RS-Handle
+    _enable_matrix(monkeypatch, lambda u, pw: "lionel")
+    r = client.get("/v1/me", headers={**_basic("lionel", "pdf-pass"), "X-RS-Handle": "mallory"})
+    assert r.status_code == 200 and r.json()["handle"] == "lionel"
+
+
+def test_matrix_gate_caches_validation(client, monkeypatch):
+    calls = {"n": 0}
+
+    def validate(u, pw):
+        calls["n"] += 1
+        return "lionel"
+
+    _enable_matrix(monkeypatch, validate)
+    h = _basic("lionel", "pdf-pass")
+    assert client.get("/v1/me", headers=h).status_code == 200
+    assert client.get("/v1/me", headers=h).status_code == 200
+    assert calls["n"] == 1  # the second request is served from the cache
+
+
+def test_matrix_gate_healthz_still_open(client, monkeypatch):
+    _enable_matrix(monkeypatch, lambda u, pw: None)  # nobody can log in
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/v1/health").status_code == 200

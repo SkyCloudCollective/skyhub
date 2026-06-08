@@ -14,10 +14,12 @@ import mimetypes
 import os
 import pathlib
 import sqlite3
+import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
@@ -48,14 +50,40 @@ app.add_middleware(
 )
 
 
-# ── gated preview: HTTP Basic Auth (RS_BASIC_AUTH="user:password") ────────────-
-# A coarse front-door lock for a protected preview deploy. When the env is set,
-# every request needs Basic creds except the unauthenticated health probe; when
-# it's unset there is NO gate at all (tests + local stay untouched). This is the
-# *only* consumer of the Authorization header — app identity rides on X-RS-Handle
-# (see acting()), so the lock and the per-member identity never collide. CORS
-# preflight (OPTIONS) is allowed through so browsers can negotiate first.
+# ── front-door gate: HTTP Basic Auth, two modes ──────────────────────────────-
+# The browser's native Basic prompt collects "user + password"; the gate decides
+# who's allowed. Two modes, picked by env:
+#
+#   per-member (Matrix)  — when RANCHSAMPLES_MATRIX_HS is set: each member signs in
+#       with THEIR OWN credentials (the same login as their PDF sheet), validated
+#       against Synapse. The authenticated handle becomes the request identity, so
+#       favourites / votes / profiles are per-person. Validations are cached briefly
+#       so we don't call Matrix on every request.
+#   shared (static)      — else, when RS_BASIC_AUTH="user:password" is set: one
+#       shared credential for everyone (the old preview lock).
+#   none                 — neither set: no gate (tests + local dev stay untouched).
+#
+# OPTIONS (CORS preflight) and the health probes are always exempt. On success in
+# per-member mode the handle is stashed on request.state.rs_handle (acting() reads it).
 _BASIC_EXEMPT = ("/healthz", "/v1/health")
+
+# tiny per-process cache: sha256(Authorization header) -> (expiry_monotonic, handle)
+_AUTH_TTL = float(os.environ.get("RS_AUTH_CACHE_TTL", "300"))
+_AUTH_CACHE_MAX = 4096
+_AUTH_CACHE: dict[str, tuple[float, str]] = {}
+
+
+def _decode_basic(header: str | None) -> tuple[str, str] | None:
+    if not header or not header.lower().startswith("basic "):
+        return None
+    try:
+        decoded = base64.b64decode(header.split(" ", 1)[1].strip(), validate=True).decode("utf-8")
+    except (ValueError, binascii.Error, UnicodeDecodeError):
+        return None
+    if ":" not in decoded:
+        return None
+    user, _, pw = decoded.partition(":")
+    return user, pw
 
 
 def _basic_creds() -> tuple[str, str] | None:
@@ -67,29 +95,58 @@ def _basic_creds() -> tuple[str, str] | None:
 
 
 def _basic_ok(header: str | None, user: str, pw: str) -> bool:
-    if not header or not header.lower().startswith("basic "):
+    creds = _decode_basic(header)
+    if creds is None:
         return False
-    try:
-        decoded = base64.b64decode(header.split(" ", 1)[1].strip(), validate=True).decode("utf-8")
-    except (ValueError, binascii.Error, UnicodeDecodeError):
-        return False
-    got_user, _, got_pw = decoded.partition(":")
+    got_user, got_pw = creds
     # constant-time on both halves; the &-ed booleans avoid short-circuit timing.
     return hmac.compare_digest(got_user, user) & hmac.compare_digest(got_pw, pw)
 
 
-@app.middleware("http")
-async def basic_auth_gate(request: Request, call_next):
-    creds = _basic_creds()
-    if creds is None or request.method == "OPTIONS" or request.url.path in _BASIC_EXEMPT:
-        return await call_next(request)
-    if _basic_ok(request.headers.get("authorization"), *creds):
-        return await call_next(request)
+async def _matrix_handle(header: str | None) -> str | None:
+    """Validate Basic creds against Matrix (cached). Returns the member handle or None."""
+    creds = _decode_basic(header)
+    if creds is None:
+        return None
+    key = hashlib.sha256(header.encode("utf-8")).hexdigest()
+    now = time.monotonic()
+    hit = _AUTH_CACHE.get(key)
+    if hit and hit[0] > now:
+        return hit[1]
+    handle = await run_in_threadpool(auth.matrix_login, creds[0], creds[1])
+    if handle:
+        if len(_AUTH_CACHE) >= _AUTH_CACHE_MAX:
+            _AUTH_CACHE.clear()
+        _AUTH_CACHE[key] = (now + _AUTH_TTL, handle)
+    return handle
+
+
+def _deny() -> Response:
     return Response(
         status_code=401,
         content="Authentication required.",
         headers={"WWW-Authenticate": 'Basic realm="SkyHub"'},
     )
+
+
+@app.middleware("http")
+async def basic_auth_gate(request: Request, call_next):
+    if request.method == "OPTIONS" or request.url.path in _BASIC_EXEMPT:
+        return await call_next(request)
+    # per-member mode: each member signs in with their own (PDF) credentials.
+    if auth.auth_enabled():
+        handle = await _matrix_handle(request.headers.get("authorization"))
+        if not handle:
+            return _deny()
+        request.state.rs_handle = handle
+        return await call_next(request)
+    # shared mode: one credential for everyone (back-compat).
+    creds = _basic_creds()
+    if creds is None:
+        return await call_next(request)
+    if _basic_ok(request.headers.get("authorization"), *creds):
+        return await call_next(request)
+    return _deny()
 
 
 @app.get("/healthz")
@@ -115,14 +172,20 @@ def wdb() -> sqlite3.Connection:
 
 
 def acting(
+    request: Request,
     authorization: Optional[str] = Header(default=None),
     x_rs_handle: Optional[str] = Header(default=None),
 ) -> str:
     """The handle performing the request (dev mode -> the dev handle).
 
-    X-RS-Handle (the app identity header) wins over Authorization so it can
-    coexist with the HTTP Basic gate (RS_BASIC_AUTH), which uses Authorization.
+    In per-member (Matrix) gate mode the front door already authenticated the
+    member and stashed their handle on request.state — that wins, so identity is
+    the signed-in person. Otherwise X-RS-Handle (the app identity header) wins so
+    it can coexist with the shared HTTP Basic gate (which uses Authorization).
     """
+    gated = getattr(request.state, "rs_handle", None)
+    if gated:
+        return gated
     return auth.current_handle(authorization, app_handle=x_rs_handle)
 
 
